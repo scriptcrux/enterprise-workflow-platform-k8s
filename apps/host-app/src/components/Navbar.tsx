@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth, PRESET_TENANTS, PRESET_USERS } from '../context/AuthContext.js';
 import { useSSE } from '../context/SSEContext.js';
-import { Layers, CheckSquare, Shield, Bell, Building2, UserCircle2, Radio } from 'lucide-react';
+import { Layers, CheckSquare, Shield, Bell, Building2, UserCircle2, Radio, UserCheck } from 'lucide-react';
+import { DelegationModal } from './DelegationModal.js';
 
 export const Navbar: React.FC = () => {
   const { tenantId, setTenantId, currentUser, setCurrentUser, apiUrl } = useAuth();
   const { connected: sseConnected, unreadCount } = useSSE();
   const [apiOnline, setApiOnline] = useState<boolean>(true);
+  const [isDelegationModalOpen, setIsDelegationModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     async function checkHealth() {
@@ -345,8 +347,38 @@ export const Navbar: React.FC = () => {
               {currentUser.role.replace('_', ' ')}
             </span>
           </div>
+
+          {/* Out-of-Office Delegation Modal Trigger */}
+          <button
+            data-testid="open-delegation-modal-btn"
+            onClick={() => setIsDelegationModalOpen(true)}
+            title="Out-of-Office & Proxy Approvals"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
+              color: '#e2e8f0',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <UserCheck size={15} color="#38bdf8" />
+            <span>OOO Delegation</span>
+          </button>
         </div>
       </div>
+
+      {/* Out-of-Office Delegations Modal */}
+      <DelegationModal
+        isOpen={isDelegationModalOpen}
+        onClose={() => setIsDelegationModalOpen(false)}
+      />
     </header>
   );
 };

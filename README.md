@@ -53,7 +53,7 @@ flowchart TD
 
     HostApp -->|REST API + Tenant Headers| WFAPI
     Widget -->|Custom Events & REST| WFAPI
-    HostApp <-->|SSE Stream (/api/v1/stream)| NotifSvc
+    HostApp <-->|"SSE Stream (/api/v1/stream)"| NotifSvc
     WFAPI -->|1. Atomic Transaction with RLS Scoping| WFDB
     WFDB -->|2. Poll Unpublished Events| OutboxRelay
     OutboxRelay -->|3. Publish CloudEvent with traceparent| Broker
@@ -218,9 +218,9 @@ PostgreSQL 16 managed with **Drizzle ORM** (Port `5433` / Database `workflow_db`
 │   ├── 08-observability.yaml   # Jaeger Tracing, Prometheus Server & Kafka UI
 │   └── local/                  # Local cluster setup, fast hot-reloads & port-forwards
 ├── tests/                      # Automated test suite (140+ tests across 30+ suites)
-│   ├── contract/               # Kafka partition ordering, CloudEvents schemas & Consumer/Provider Pact CDCT
+│   ├── contract/               # Kafka partition ordering, CloudEvents schema evolution & Consumer/Provider Pact CDCT
 │   ├── unit/                   # State machine, rules engine, rate limiter, SLA time-travel & telemetry tests
-│   ├── integration/            # Trace waterfall, outbox relay, DLQ resilience & live PostgreSQL RLS tests
+│   ├── integration/            # Trace waterfall, outbox relay, DLQ resilience & live PostgreSQL/Kafka Testcontainers
 │   ├── security/               # PostgreSQL pool leak guard, tenant isolation & IDOR tests
 │   ├── perf/                   # k6 workflow load & multi-tenant noisy neighbor isolation benchmarks
 │   └── e2e/                    # Playwright user journeys, MFE event bus, error boundary & Axe a11y audits
@@ -241,7 +241,7 @@ The platform implements an **8-Layer Quality Engineering & Testing Pyramid** int
                             /   \    Tier 7: End-to-End User Journeys, MFE & a11y (Playwright + Axe)
                            /     \   Tier 6: Trace Waterfall & Service Integration (Testcontainers)
                           /       \  Tier 5: Tenant Security Matrix & Pool Leak Guard (Vitest)
-                         /         \ Tier 4: Consumer-Driven Contracts & Kafka Ordering (Pact & Murmur2)
+                         /         \ Tier 4: Consumer-Driven Contracts, Schema Evolution & Kafka Ordering (Pact & Ajv)
                         /           \Tier 3: Frontend Component & Hook Suite (React Testing Lib + JSDOM)
                        /             \Tier 2: Microservice Unit Logic, SLA Time-Travel & Rate Limits (Vitest)
                       /_______________\Tier 1: Static Type Safety & Compilation (TypeScript Strict)
@@ -256,9 +256,12 @@ The platform implements an **8-Layer Quality Engineering & Testing Pyramid** int
 | `npm run test:watch` | Vitest interactive live test runner | **Instant** | During active feature development |
 | `npm test` | Runs all automated test suites across the monorepo | **~9s** | Full workspace validation |
 | `npm run test:unit` | Service state machines, rules engine, rate limiter & SLA escalation tests | **~1s** | Backend logic iteration |
-| `npm run test:contract` | Kafka partition ordering, Fastify routes & CloudEvents 1.0 schemas | **~1s** | API & event schema changes |
+| `npm run test:contract` | Kafka partition ordering, Fastify routes, CloudEvents 1.0 schema compatibility & Pact contracts | **~4s** | API & event schema changes |
 | `npm run test:pact` | Generates & verifies HTTP & Kafka MessagePact contracts | **~3s** | Cross-service contract verification |
+| `npm run test:pact:consumer` | Generates Pact JSON files (HTTP 200/201/400/404 + Kafka CloudEvents) | **~2s** | Consumer schema changes |
+| `npm run test:pact:provider` | Verifies Fastify HTTP provider (stateHandlers) & Kafka Message Providers | **~3s** | Provider implementation verification |
 | `npm run pact:can-i-deploy` | Queries Pact Broker matrix (`dev` / `qa` / `prod`) | **~1s** | Deployment compatibility check |
+| `npm run pact:publish` | Publishes contract pact files to central Pact Broker | **~1s** | CI/CD contract sharing |
 | `npm run test:security` | Tenant isolation, DB pool leak guard & PostgreSQL RLS kernel policy tests | **~1s** | Security & multi-tenant changes |
 | `npm run test:integration` | End-to-end trace waterfall, DLQ resilience & outbox loop tests | **~3s** | Distributed subsystem changes |
 | `npm run test:e2e` | Playwright browser journeys, MFE error boundary & WCAG a11y tests | **~15s** | Full frontend-to-backend validation |

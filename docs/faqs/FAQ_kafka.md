@@ -1,4 +1,53 @@
-# I was testing outbox relay step in kubernetes, to mimic we scaled down the instance to 0 and did the transactition and scaled up $body = @{ title = "Outbox Chaos Test"; amount = 50000; type = "EXPENSE" } | ConvertTo-Json;>> $headers = @{ "Content-Type" = "application/json"; "x-tenant-id" = "tenant-corp-a"; "x-user-id" = "user-alice"; "x-user-name" = "Alice Johnson" };>> $wf = (Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/v1/workflows" -Method Post -Headers $headers -Body $body).data;>> >> # Submit for review while Kafka is offline>> $sub = Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/v1/workflows/$($wf.id)/submit" -Method Post -Headers $headers -BodHTTP Status: Success=True, Workflow Status=PENDINGPS D:\Testing\microservices\full-stack-app\workflow-platform-k8s> kubectl exec -i -n workflow-platform postgres-0 -- psql -U postgres -d workflow_db -c "SELECT id, event_type, published, retry_count, last_errorU postgres -d workflow_db -c "SELECT id, event_type, published, retry_counts WHERE published = false;" id | event_type | published | retry_count | last_error--------------------------------------+-----------------------+-----------+-------------+----------------------------------------------------------- 50cfc5bf-fa26-4802-8912-dd0117cf968e | workflow.submitted.v1 | f | 7 | Connection error: connect ECONNREFUSED 10.96.219.134:9092(1 row) kubectl scale deployment kafka -n workflow-platform --replicas=1deployment "kafka" successfully rolled outPS D:\Testing\microservices\full-stack-app\workflow-platform-k8s> kubectl exec -i -n workflow-platform postgres-0 -- psql -U postgres -d workflow_db -c "SELECT id, event_type, published, published_at FROM outbox_events ORDER BY created_at DESC LIMIT 1;" id | event_type | published | published_at--------------------------------------+-----------------------+-----------+---------------------------- 50cfc5bf-fa26-4802-8912-dd0117cf968e | workflow.submitted.v1 | t | 2026-09-19 11:17:27.727+00(1 row)
+# I was testing outbox relay step in kubernetes, to mimic we scaled down the instance to 0 and did the transactition and scaled up 
+
+
+```shell
+$body = @{ title = "Outbox Chaos Test"; amount = 50000; type = "EXPENSE" } | ConvertTo-Json;>> $headers = @{ "Content-Type" = "application/json"; "x-tenant-id" = "tenant-corp-a"; "x-user-id" = "user-alice"; "x-user-name" = "Alice Johnson" };>> $wf = (Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/v1/workflows" -Method Post -Headers $headers -Body $body).data;>> >>
+```
+
+```shell
+# Submit for review while Kafka is offline
+$sub = Invoke-RestMethod -Uri "http://127.0.0.1:3000/api/v1/workflows/$($wf.id)/submit" -Method Post -Headers $headers -BodHTTP Status: Success=True, Workflow Status=PENDING
+```
+
+### Checking Outbox Events (Kafka Offline)
+
+```shell
+PS D:\Testing\microservices\full-stack-app\workflow-platform-k8s> kubectl exec -i -n workflow-platform postgres-0 -- psql -U postgres -d workflow_db -c "SELECT id, event_type, published, retry_counts WHERE published = false;"
+```
+
+**Output:**
+
+| id | event_type | published | retry_count | last_error |
+| :--- | :--- | :--- | :--- | :--- |
+| 50cfc5bf-fa26-4802-8912-dd0117cf968e | workflow.submitted.v1 | f | 7 | Connection error: connect ECONNREFUSED 10.96.219.134:9092 (1 row) |
+
+---
+
+### Scaling Kafka Back Up
+
+```shell
+PS D:\Testing\microservices\full-stack-app\workflow-platform-k8s> kubectl scale deployment kafka -n workflow-platform --replicas=1
+```
+**Output:**
+```text
+deployment "kafka" successfully rolled out
+```
+
+---
+
+### Checking Outbox Events (Kafka Online)
+
+```shell
+PS D:\Testing\microservices\full-stack-app\workflow-platform-k8s> kubectl exec -i -n workflow-platform postgres-0 -- psql -U postgres -d workflow_db -c "SELECT id, event_type, published, published_at FROM outbox_events ORDER BY created_at DESC LIMIT 1;"
+```
+
+**Output:**
+
+| id | event_type | published | published_at |
+| :--- | :--- | :--- | :--- |
+| 50cfc5bf-fa26-4802-8912-dd0117cf968e | workflow.submitted.v1 | t | 2026-09-19 11:17:27.727+00 (1 row) |
+
 
 Your outbox relay test was a complete success. The pattern behaved exactly as designed, demonstrating both fault tolerance and eventual consistency.
 Here is a breakdown of what your logs show and why this proves the outbox pattern is working perfectly:
@@ -33,6 +82,7 @@ Would you like to optimize the relay configuration next? We can look into:
 
 In a standard setup, saving data to a database and sending an event to Kafka are two separate actions. If Kafka goes down mid-operation, your database saves the data, but your event is lost forever.
 The Transactional Outbox Pattern solves this by using a single database transaction to guarantee that your business data and your event details are saved together.
+
 ------------------------------
 ## Where the Event Details are Stored
 The event details (like the payload containing the workflow ID, tenant ID, and event type) are not sent directly to Kafka by your API. Instead, they are stored inside a dedicated table in your PostgreSQL database, usually named outbox_events or outbox.
@@ -42,6 +92,7 @@ When you executed the /submit API request, your backend code executed an ACID da
    2. Inserts into the Outbox Table: It inserts a new row into the outbox_events table containing the event payload (often stored as a JSONB column), the event type (workflow.submitted.v1), and a status flag (published = false).
 
 Because both operations happen in a single database transaction, they are atomic: either both succeed, or both fail.
+
 ------------------------------
 ## Step-by-Step Workflow: How It Works
 The entire architecture relies on two separate steps: the Transaction Phase and the Relay Phase.
@@ -56,10 +107,10 @@ The entire architecture relies on two separate steps: the Transaction Phase and 
                                                └──( Commit DB Transaction )
 
 
-* 
+
 * What happens: The API commits the data to PostgreSQL and immediately returns a 200 OK success response to the user.
 * Kafka's role here: None. The API completely ignores Kafka during the HTTP request. This is why your API succeeded even though Kafka was down.
-* 
+
 
 ## Phase 2: The Outbox Relay (Eventual Consistency)
 A separate, independent background process (called the Outbox Relay or Publisher Worker) handles moving the events from the database to Kafka.
@@ -98,7 +149,7 @@ Would you like to review the backend code structure for how the API saves the JS
 ## 1. How long will the event stay in the database?
 The event details stay in the outbox_events table permanently until a cleanup mechanism removes them. [1] 
 
-* 
+
 * The standard behaviour: The record remains exactly as you saw it (published = true with a timestamp). It does not disappear automatically. [2] 
 * Why keep it? It serves as an excellent audit log. If a downstream team claims they never received a message, you can point to the table and prove it was published.
 * Production Management: If you leave it indefinitely, the table will grow massive and slow down your database. In production environments, you typically run a daily background cron job (or an asynchronous worker) that handles the cleanup:
@@ -112,16 +163,18 @@ The event details stay in the outbox_events table permanently until a cleanup me
 ## 2. Who is polling the database?
 Depending on how you built your microservice, the "Outbox Relay" polling your database is one of two architectures:
 
-* 
+
 * Option A: A Polling Worker (Built into your code)
 You have a background cron task, timer loop, or worker process (e.g., inside your Node.js/Go/Java backend app) executing a scheduled loop every few seconds. It runs a query like:
 
+```sql
 SELECT * FROM outbox_events WHERE published = false ORDER BY created_at ASC LIMIT 50 FOR UPDATE SKIP LOCKED;
+```
 
 (The SKIP LOCKED clause prevents multiple instances of your API from grabbing the exact same event at the exact same time). [4, 5] 
 * Option B: Change Data Capture / CDC (Infrastructure-level)
 Instead of code querying the DB, a tool like [Debezium](https://debezium.io/) sits next to PostgreSQL. It streams the database's internal transaction log (Write-Ahead Log / WAL) directly. The moment your API writes to outbox_events, Debezium intercepts that log line and instantly shoves it into Kafka without your application ever writing another line of code. [6, 7, 8, 9] 
-* 
+ 
 
 ------------------------------
 ## 3. How does the system know when Kafka is up?
@@ -177,6 +230,7 @@ When the database is down, the API cannot write the initial business data (the w
 You might wonder: "If Kafka is up, why doesn't the API just write directly to Kafka and skip the broken DB?"
 This is known as a Dual Write, and it is highly discouraged in microservices because it breaks consistency. If you write to Kafka first because the DB is struggling, your downstream services will process a workflow that the main database has no record of. The system becomes completely desynchronized.
 In the Outbox Pattern, if the Database dies, the application dies safely. It is always better to return an error to the user than to corrupt your system's data integrity.
+
 ------------------------------
 ## Operating Databases Inside Kubernetes (Your Setup)
 Since you mentioned your PostgreSQL database is running inside the K8s cluster (as postgres-0, likely a StatefulSet), here is how Kubernetes infrastructure alters this failure scenario:
@@ -201,6 +255,7 @@ Would you like to look into how your API handles database connection pooling and
 
 This command is used to inspect the database for stuck or failed outbound events that are waiting to be processed by an Outbox pattern worker.
 Here is the exact breakdown of what the command does and what the results mean.
+
 ------------------------------
 ## 1. Breakdown of the Command
 The command is split into two halves: the Kubernetes wrapper and the PostgreSQL database query.
@@ -230,6 +285,7 @@ It checks the following columns:
 * last_error: The exact stack trace or error log printed during the last failed delivery attempt.
 
 The condition WHERE published = false; is the primary check. This filters out all successfully processed records, ensuring the terminal only returns records that are currently stuck or actively failing.
+
 ------------------------------
 ## 3. How to Interpret the Result
 When you run this, you will see one of two results in your terminal window:
@@ -251,11 +307,4 @@ When you run this, you will see one of two results in your terminal window:
 
 * What it means: Your event sync pipeline is broken or clogged.
 * Actionable Next Steps: Look directly at the retry_count and last_error columns. If the retry_count is climbing high and the last_error shows network blocks or permission timeouts, your background worker service has lost its link to the message broker, or the consumer cannot parse the event structure.
-
-If rows were returned when you ran this, let me know:
-
-* What error messages appear in the last_error column?
-* Are the retry counts actively incrementing if you run the command a second time?
-
-I can help you pinpoint the root cause of the delivery block!
 

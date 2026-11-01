@@ -165,4 +165,70 @@ test.describe('Workflow Platform End-to-End User Journeys', () => {
     await expect(stepper).toBeVisible();
     await expect(stepper).toContainText(/Approval Hierarchy/i);
   });
+
+  test('Out-of-Office Delegations & Proxy Approvals: Manager sets delegation in UI and proxy colleague signs off', async ({
+    page,
+  }) => {
+    await page.goto('/expenses');
+    await page.waitForLoadState('networkidle');
+
+    // 1. Bob (Team Lead) configures Out-of-Office Delegation in UI Modal
+    await page.getByTestId('tenant-selector').selectOption('tenant-corp-a');
+    await page.getByTestId('user-selector').selectOption('user-bob');
+
+    // Open Delegation Modal
+    await page.getByTestId('open-delegation-modal-btn').click();
+    await expect(page.getByTestId('delegation-modal-content')).toBeVisible();
+
+    // Select Carol White as proxy delegatee
+    await page.getByTestId('delegation-delegatee-select').selectOption('user-carol');
+    await page.getByTestId('delegation-reason-input').fill('Annual Leave - Proxying to Carol White');
+    await page.getByTestId('create-delegation-submit-btn').click();
+
+    // Verify Delegation appears in Active List
+    await expect(page.getByTestId('delegation-record-card').first()).toBeVisible({ timeout: 5000 });
+    await page.getByTestId('close-delegation-modal-btn').click();
+    await expect(page.getByTestId('delegation-modal-content')).not.toBeVisible();
+
+    // 2. Alice creates and submits an expense under $10,000 (routes to Team Lead approval)
+    await page.getByTestId('user-selector').selectOption('user-alice');
+
+    const expenseTitle = `Team Offsite Logistics - ${Date.now()}`;
+    await page.getByTestId('new-expense-btn').click();
+    await page.getByTestId('expense-title-input').fill(expenseTitle);
+    await page.getByTestId('expense-amount-input').fill('4200');
+    await page.getByTestId('expense-desc-input').fill('Venue booking and catering for offsite');
+    await page.getByTestId('submit-create-btn').click();
+
+    // Submit the workflow
+    await page.getByText(expenseTitle).click();
+    const submitBtn = page.getByTestId('submit-workflow-btn');
+    await expect(submitBtn).toBeVisible();
+    await submitBtn.click();
+
+    // Verify status transitions to PENDING
+    const statusBadge = page.getByTestId('workflow-status-badge');
+    await expect(statusBadge).toHaveText(/Pending/i, { timeout: 5000 });
+
+    // 3. Switch persona to Carol (Proxy Approver / Delegatee)
+    await page.getByTestId('user-selector').selectOption('user-carol');
+    await page.getByTestId('nav-approvals-link').click();
+
+    // Find and select the item in approvals inbox
+    await page.getByText(expenseTitle).click();
+
+    // 4. Carol approves on behalf of Bob
+    const approveBtn = page.getByTestId('approve-workflow-btn');
+    await expect(approveBtn).toBeVisible();
+    await approveBtn.click();
+
+    // Status transitions to APPROVED
+    await expect(page.getByTestId('workflow-status-badge')).toHaveText(/Approved/i, { timeout: 5000 });
+
+    // 5. Verify Compliance Audit Trail
+    await page.getByTestId('nav-audit-link').click();
+    await page.waitForTimeout(500);
+    const timeline = page.getByTestId('audit-timeline');
+    await expect(timeline).toBeVisible({ timeout: 5000 });
+  });
 });

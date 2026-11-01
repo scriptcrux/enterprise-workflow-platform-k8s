@@ -55,9 +55,9 @@ flowchart TB
         KafkaUI["Kafka UI (Port 8085)"]
         PactBroker["Pact Broker (Port 9292)"]
 
-        WorkflowAPI -.->|Export Spans (OTLP)| Jaeger
-        NotifService -.->|Export Spans (OTLP)| Jaeger
-        AuditService -.->|Export Spans (OTLP)| Jaeger
+        WorkflowAPI -.->|"Export Spans (OTLP)"| Jaeger
+        NotifService -.->|"Export Spans (OTLP)"| Jaeger
+        AuditService -.->|"Export Spans (OTLP)"| Jaeger
         Prometheus -.->|Scrape /metrics| WorkflowAPI
         Prometheus -.->|Scrape /metrics| NotifService
         Prometheus -.->|Scrape /metrics| AuditService

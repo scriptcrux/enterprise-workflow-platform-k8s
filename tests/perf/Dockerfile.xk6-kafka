@@ -1,0 +1,18 @@
+# Build custom k6 binary with xk6-kafka extension
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /build
+
+RUN go install go.k6.io/xk6/cmd/xk6@latest
+RUN xk6 build --with github.com/mostafa/xk6-kafka@latest --output /build/k6-kafka
+
+# Runtime image
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates
+
+COPY --from=builder /build/k6-kafka /usr/local/bin/k6
+
+WORKDIR /scripts
+
+ENTRYPOINT ["k6"]

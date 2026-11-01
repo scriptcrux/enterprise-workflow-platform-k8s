@@ -1,0 +1,233 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="100%" height="100%" style="background:#0b0f19; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c1d95"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c2d12"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#134e4a"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#60a5fa" flood-opacity="0.6"/>
+    </filter>
+
+    <!-- Markers -->
+    <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#34d399"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#a78bfa"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#fb923c"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <g id="header" transform="translate(40, 30)">
+    <text x="0" y="0" fill="#f8fafc" font-size="22" font-weight="700" letter-spacing="0.5">Workflow Platform — End-to-End Microservices Architecture</text>
+    <text x="0" y="22" fill="#94a3b8" font-size="13">Event-Driven Multi-Tenant System Design &amp; Transactional Outbox Pattern</text>
+  </g>
+
+  <!-- ==================== LAYER 1: FRONTEND LAYER ==================== -->
+  <g id="layer-frontend" transform="translate(40, 75)">
+    <!-- Group Container -->
+    <rect x="0" y="0" width="1120" height="120" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="15" y="-10" width="160" height="20" rx="4" fill="#1e293b"/>
+    <text x="25" y="4" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="0.5">1. FRONTEND LAYER (MFE)</text>
+
+    <!-- Host React App Box -->
+    <rect x="30" y="25" width="500" height="75" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <circle cx="50" cy="45" r="10" fill="#0284c7"/>
+    <text x="46" y="49" fill="#ffffff" font-size="12" font-weight="bold">⚛</text>
+    <text x="70" y="45" fill="#f8fafc" font-size="14" font-weight="600">Host Application (React + Vite)</text>
+    <text x="70" y="62" fill="#94a3b8" font-size="11">Port 5173 / 8080 • Persona Switcher • Real-Time SSE Feed • Approvals Inbox</text>
+    <rect x="440" y="35" width="75" height="18" rx="4" fill="#0369a1"/>
+    <text x="448" y="48" fill="#e0f2fe" font-size="10" font-weight="600">Active Host</text>
+
+    <!-- Workflow Web Component Box -->
+    <rect x="580" y="25" width="500" height="75" rx="8" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+    <circle cx="600" cy="45" r="10" fill="#7e22ce"/>
+    <text x="595" y="49" fill="#ffffff" font-size="11" font-weight="bold">&lt;&gt;</text>
+    <text x="620" y="45" fill="#f8fafc" font-size="14" font-weight="600">&lt;workflow-widget&gt; Web Component</text>
+    <text x="620" y="62" fill="#94a3b8" font-size="11">Port 3003 • Shadow DOM • Encapsulated Stepper • CustomEvent Bubbling</text>
+    <rect x="980" y="35" width="85" height="18" rx="4" fill="#6b21a8"/>
+    <text x="988" y="48" fill="#f3e8ff" font-size="10" font-weight="600">Web Component</text>
+
+    <!-- MFE Communication Line -->
+    <path d="M 530 62 L 580 62" stroke="#a855f7" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrowPurple)"/>
+    <text x="535" y="54" fill="#c084fc" font-size="9" font-weight="600">Embeds</text>
+  </g>
+
+  <!-- Flow Arrow: Frontend -> Gateway -->
+  <path d="M 300 195 L 300 225" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <text x="308" y="213" fill="#38bdf8" font-size="10" font-weight="600">HTTP/REST + Tenant Headers</text>
+
+  <!-- ==================== LAYER 2: API GATEWAY & CORE ==================== -->
+  <g id="layer-gateway" transform="translate(40, 225)">
+    <!-- Group Container -->
+    <rect x="0" y="0" width="1120" height="135" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="15" y="-10" width="195" height="20" rx="4" fill="#1e293b"/>
+    <text x="25" y="4" fill="#60a5fa" font-size="11" font-weight="700" letter-spacing="0.5">2. API GATEWAY &amp; CORE API</text>
+
+    <!-- Middleware Pipe: Tenant Context -->
+    <rect x="30" y="28" width="200" height="80" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+    <text x="42" y="48" fill="#93c5fd" font-size="12" font-weight="700">1. Tenant &amp; Trace MW</text>
+    <text x="42" y="66" fill="#cbd5e1" font-size="10">• x-tenant-id</text>
+    <text x="42" y="80" fill="#cbd5e1" font-size="10">• x-correlation-id</text>
+    <text x="42" y="94" fill="#cbd5e1" font-size="10">• W3C traceparent</text>
+
+    <path d="M 230 68 L 260 68" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+    <!-- Middleware Pipe: Token Bucket Rate Limiter -->
+    <rect x="260" y="28" width="210" height="80" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+    <text x="272" y="48" fill="#93c5fd" font-size="12" font-weight="700">2. Token-Bucket Limiter</text>
+    <text x="272" y="66" fill="#cbd5e1" font-size="10">• 100 req/min per tenant</text>
+    <text x="272" y="80" fill="#cbd5e1" font-size="10">• Burst capacity: 20</text>
+    <text x="272" y="94" fill="#f87171" font-size="10">• Fast 429 Too Many Req</text>
+
+    <path d="M 470 68 L 500 68" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+    <!-- Middleware Pipe: Idempotency -->
+    <rect x="500" y="28" width="200" height="80" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1"/>
+    <text x="512" y="48" fill="#93c5fd" font-size="12" font-weight="700">3. Idempotency Guard</text>
+    <text x="512" y="66" fill="#cbd5e1" font-size="10">• Idempotency-Key Header</text>
+    <text x="512" y="80" fill="#cbd5e1" font-size="10">• Atomic Cache Check</text>
+    <text x="512" y="94" fill="#34d399" font-size="10">• x-idempotent-replay</text>
+
+    <path d="M 700 68 L 730 68" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrowBlue)"/>
+
+    <!-- Workflow API Box -->
+    <rect x="730" y="22" width="360" height="92" rx="8" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+    <text x="745" y="45" fill="#ffffff" font-size="14" font-weight="700">Workflow API Service (Fastify)</text>
+    <text x="745" y="62" fill="#bfdbfe" font-size="11">Port 3000 • Dynamic State Machine • Rules Engine</text>
+    <text x="745" y="78" fill="#bfdbfe" font-size="11">Delegations • PostgreSQL RLS Client • Deep Probes</text>
+    <rect x="990" y="32" width="85" height="18" rx="4" fill="#1d4ed8"/>
+    <text x="998" y="45" fill="#ffffff" font-size="10" font-weight="600">Core REST API</text>
+  </g>
+
+  <!-- Flow Arrow: Workflow API -> Database -->
+  <path d="M 910 360 L 910 400" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <text x="918" y="383" fill="#34d399" font-size="10" font-weight="700">1. Atomic ACID Transaction (State + Outbox)</text>
+
+  <!-- ==================== LAYER 3: STORAGE & OUTBOX RELAY ==================== -->
+  <g id="layer-storage" transform="translate(40, 400)">
+    <!-- Group Container -->
+    <rect x="0" y="0" width="1120" height="135" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="15" y="-10" width="220" height="20" rx="4" fill="#1e293b"/>
+    <text x="25" y="4" fill="#34d399" font-size="11" font-weight="700" letter-spacing="0.5">3. ACID STORAGE &amp; OUTBOX RELAY</text>
+
+    <!-- PostgreSQL Database Box -->
+    <rect x="30" y="24" width="550" height="90" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+    <circle cx="55" cy="50" r="14" fill="#047857"/>
+    <text x="47" y="56" fill="#ffffff" font-size="16" font-weight="bold">🗄️</text>
+    <text x="80" y="46" fill="#ffffff" font-size="14" font-weight="700">PostgreSQL: workflow_db (Port 5433 / 5432)</text>
+    <text x="80" y="64" fill="#a7f3d0" font-size="11">Tables: workflows, workflow_steps, delegations, outbox_events, idempotency_keys</text>
+    <text x="80" y="80" fill="#6ee7b7" font-size="11" font-weight="600">🛡️ Row-Level Security (RLS) Active: current_setting('app.current_tenant_id')</text>
+    <rect x="495" y="34" width="75" height="18" rx="4" fill="#047857"/>
+    <text x="502" y="47" fill="#ffffff" font-size="10" font-weight="600">PostgreSQL 16</text>
+
+    <!-- Outbox Polling Arrow -->
+    <path d="M 580 68 L 650 68" stroke="#34d399" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrowGreen)"/>
+    <text x="585" y="60" fill="#6ee7b7" font-size="9" font-weight="600">SKIP LOCKED</text>
+
+    <!-- Outbox Relay Box -->
+    <rect x="650" y="24" width="440" height="90" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+    <circle cx="675" cy="50" r="14" fill="#b45309"/>
+    <text x="668" y="56" fill="#ffffff" font-size="14" font-weight="bold">⚡</text>
+    <text x="700" y="46" fill="#ffffff" font-size="14" font-weight="700">Transactional Outbox Relay Worker</text>
+    <text x="700" y="64" fill="#fde68a" font-size="11">• Polls unpublished events (published = false) via row locks</text>
+    <text x="700" y="80" fill="#fde68a" font-size="11">• Publishes CloudEvents 1.0 to Kafka with key: ${tenantId}:${workflowId}</text>
+    <text x="700" y="96" fill="#34d399" font-size="10" font-weight="600">✓ Resilient to Broker Downtime (Zero Dual-Write Loss)</text>
+    <rect x="995" y="34" width="85" height="18" rx="4" fill="#b45309"/>
+    <text x="1002" y="47" fill="#ffffff" font-size="10" font-weight="600">Relay Worker</text>
+  </g>
+
+  <!-- Flow Arrow: Outbox Relay -> Kafka -->
+  <path d="M 870 535 L 870 575" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arrowOrange)"/>
+  <text x="878" y="558" fill="#f59e0b" font-size="10" font-weight="700">2. Publish CloudEvents (Partition Key: tenantId:workflowId)</text>
+
+  <!-- ==================== LAYER 4: APACHE KAFKA EVENT BUS ==================== -->
+  <g id="layer-kafka" transform="translate(40, 575)">
+    <!-- Group Container -->
+    <rect x="0" y="0" width="1120" height="115" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="15" y="-10" width="190" height="20" rx="4" fill="#1e293b"/>
+    <text x="25" y="4" fill="#fb923c" font-size="11" font-weight="700" letter-spacing="0.5">4. APACHE KAFKA EVENT BUS</text>
+
+    <!-- Kafka Main Cluster -->
+    <rect x="30" y="22" width="600" height="75" rx="8" fill="#7c2d12" stroke="#f97316" stroke-width="2"/>
+    <text x="45" y="45" fill="#ffffff" font-size="14" font-weight="700">Apache Kafka Cluster (Port 9092) — Topic: workflow.events</text>
+    <text x="45" y="62" fill="#fed7aa" font-size="11">• 3 Partitions • Murmur2 Hashing on ${tenantId}:${workflowId} (Strict Monotonic FIFO)</text>
+    <text x="45" y="78" fill="#fed7aa" font-size="11">• Events: workflow.submitted.v1, step_approved.v1, approved.v1, rejected.v1, cancelled.v1</text>
+    <rect x="535" y="32" width="85" height="18" rx="4" fill="#c2410c"/>
+    <text x="543" y="45" fill="#ffffff" font-size="10" font-weight="600">Kafka 3.7</text>
+
+    <!-- Poison Pill Arrow -->
+    <path d="M 630 60 L 700 60" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrowOrange)"/>
+    <text x="636" y="52" fill="#f87171" font-size="9" font-weight="700">Poison Pill</text>
+
+    <!-- Kafka DLQ Box -->
+    <rect x="700" y="22" width="390" height="75" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+    <text x="715" y="45" fill="#f87171" font-size="13" font-weight="700">Dead Letter Queue: workflow.events.dlq</text>
+    <text x="715" y="62" fill="#fca5a5" font-size="11">• Isolates unparseable/toxic payloads with error headers</text>
+    <text x="715" y="78" fill="#fca5a5" font-size="11">• Prevents consumer partition halts • Replay via Audit API</text>
+  </g>
+
+  <!-- Flow Arrow: Kafka -> Consumers -->
+  <path d="M 330 690 L 330 730" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowPurple)"/>
+  <text x="338" y="713" fill="#a78bfa" font-size="10" font-weight="600">3. Consume Event Streams</text>
+
+  <!-- ==================== LAYER 5: CONSUMERS & OBSERVABILITY ==================== -->
+  <g id="layer-consumers" transform="translate(40, 730)">
+    <!-- Group Container -->
+    <rect x="0" y="0" width="1120" height="135" rx="12" fill="#111827" stroke="#1e293b" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="15" y="-10" width="280" height="20" rx="4" fill="#1e293b"/>
+    <text x="25" y="4" fill="#a78bfa" font-size="11" font-weight="700" letter-spacing="0.5">5. ASYNC CONSUMERS &amp; OBSERVABILITY</text>
+
+    <!-- Notification Service -->
+    <rect x="30" y="24" width="340" height="92" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="45" y="46" fill="#ffffff" font-size="13" font-weight="700">Notification Service (Port 3001)</text>
+    <text x="45" y="64" fill="#93c5fd" font-size="11">Group: notification-service-group</text>
+    <text x="45" y="80" fill="#cbd5e1" font-size="11">• Real-Time SSE Stream: /api/v1/stream</text>
+    <text x="45" y="96" fill="#38bdf8" font-size="10" font-weight="600">📡 Instant Live Push to Browser Tabs</text>
+
+    <!-- Audit Service -->
+    <rect x="390" y="24" width="340" height="92" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+    <text x="405" y="46" fill="#ffffff" font-size="13" font-weight="700">Audit Service (Port 3002)</text>
+    <text x="405" y="64" fill="#6ee7b7" font-size="11">Group: audit-service-group • DB: audit_db</text>
+    <text x="405" y="80" fill="#cbd5e1" font-size="11">• Immutable Ledger (ON CONFLICT DO NOTHING)</text>
+    <text x="405" y="96" fill="#34d399" font-size="10" font-weight="600">🛡️ DLQ Inspection &amp; Reprocessing API</text>
+
+    <!-- Observability Cluster -->
+    <rect x="750" y="24" width="340" height="92" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="765" y="46" fill="#ffffff" font-size="13" font-weight="700">Telemetry &amp; Contracts Stack</text>
+    <text x="765" y="64" fill="#e9d5ff" font-size="10">• <tspan font-weight="bold">Jaeger (16686)</tspan>: OTLP Spans, DB Queries &amp; W3C Graphs</text>
+    <text x="765" y="80" fill="#e9d5ff" font-size="10">• <tspan font-weight="bold">Prometheus (9090) / Grafana (3005)</tspan>: DB Pool &amp; Lag</text>
+    <text x="765" y="96" fill="#e9d5ff" font-size="10">• <tspan font-weight="bold">Pact Broker (9292)</tspan>: Contract Matrix &amp; Can-I-Deploy</text>
+  </g>
+</svg>

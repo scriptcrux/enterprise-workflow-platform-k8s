@@ -57,7 +57,7 @@ describe('Pact Async Message Contract: workflow-platform-events -> notification-
           actorId: string('user-alice'),
           previousStatus: string('DRAFT'),
           currentStatus: string('PENDING'),
-          assignedRole: string('APPROVER'),
+          stepRole: string('APPROVER'),
           amount: integer(12000),
           currency: string('USD'),
           timestamp: string('2026-09-21T08:00:00.000Z'),
@@ -69,13 +69,6 @@ describe('Pact Async Message Contract: workflow-platform-events -> notification-
       .verify(async (message) => {
         const payload = typeof message.contents === 'string' ? JSON.parse(message.contents) : message.contents;
 
-        // Verify notification-service can process this message contract
-        const mockStorage = {
-          save: () => Promise.resolve({ id: 'notif-1' }),
-        };
-        const mockDlq = {
-          routeToDlq: () => Promise.resolve(),
-        };
         const consumer = new NotificationConsumer();
         await expect(
           consumer.processMessage({
@@ -89,6 +82,41 @@ describe('Pact Async Message Contract: workflow-platform-events -> notification-
             pause: () => () => {},
           } as any)
         ).resolves.not.toThrow();
+      });
+  });
+
+  it('notification-service consumes workflow.step_approved.v1 event', async () => {
+    await notificationPact
+      .expectsToReceive('a CloudEvent for workflow.step_approved.v1')
+      .withContent({
+        specversion: string('1.0'),
+        id: uuid('d1e2d3c4-b5a6-7890-1234-56789abcdef3'),
+        source: string('workflow-api'),
+        type: string('workflow.step_approved.v1'),
+        datacontenttype: string('application/json'),
+        time: string('2026-09-21T08:02:00.000Z'),
+        data: {
+          workflowId: uuid('e1a2b3c4-d5e6-7f80-1234-56789abcdef0'),
+          tenantId: string('tenant-corp-a'),
+          type: string('EXPENSE'),
+          title: string('AWS Cloud Infrastructure Annual Invoice'),
+          requesterId: string('user-alice'),
+          requesterName: string('Alice Engineer'),
+          actorId: string('user-lead-reviewer'),
+          previousStatus: string('PENDING'),
+          currentStatus: string('PENDING'),
+          currentStepOrder: integer(1),
+          totalSteps: integer(2),
+          timestamp: string('2026-09-21T08:02:00.000Z'),
+        },
+      })
+      .withMetadata({
+        contentType: 'application/json',
+      })
+      .verify(async (message) => {
+        const payload = typeof message.contents === 'string' ? JSON.parse(message.contents) : message.contents;
+        expect(payload.type).toBe('workflow.step_approved.v1');
+        expect(payload.data.currentStepOrder).toBe(1);
       });
   });
 
@@ -123,6 +151,39 @@ describe('Pact Async Message Contract: workflow-platform-events -> notification-
         const payload = typeof message.contents === 'string' ? JSON.parse(message.contents) : message.contents;
         expect(payload.type).toBe('workflow.approved.v1');
         expect(payload.data.currentStatus).toBe('APPROVED');
+      });
+  });
+
+  it('notification-service consumes workflow.cancelled.v1 event', async () => {
+    await notificationPact
+      .expectsToReceive('a CloudEvent for workflow.cancelled.v1')
+      .withContent({
+        specversion: string('1.0'),
+        id: uuid('e1e2d3c4-b5a6-7890-1234-56789abcdef4'),
+        source: string('workflow-api'),
+        type: string('workflow.cancelled.v1'),
+        datacontenttype: string('application/json'),
+        time: string('2026-09-21T08:12:00.000Z'),
+        data: {
+          workflowId: uuid('e1a2b3c4-d5e6-7f80-1234-56789abcdef0'),
+          tenantId: string('tenant-corp-a'),
+          type: string('EXPENSE'),
+          title: string('Obsolete Hardware Request'),
+          requesterId: string('user-alice'),
+          requesterName: string('Alice Engineer'),
+          actorId: string('user-alice'),
+          previousStatus: string('PENDING'),
+          currentStatus: string('CANCELLED'),
+          timestamp: string('2026-09-21T08:12:00.000Z'),
+        },
+      })
+      .withMetadata({
+        contentType: 'application/json',
+      })
+      .verify(async (message) => {
+        const payload = typeof message.contents === 'string' ? JSON.parse(message.contents) : message.contents;
+        expect(payload.type).toBe('workflow.cancelled.v1');
+        expect(payload.data.currentStatus).toBe('CANCELLED');
       });
   });
 

@@ -29,7 +29,7 @@
 
 ---
 
-## 1. The Testing Philosophy
+## <a id="1-the-testing-philosophy"></a>1. The Testing Philosophy
 
 The JD explicitly states:
 
@@ -55,7 +55,7 @@ This means we don't test everything equally. We invest testing effort where **th
 
 ---
 
-## 2. The Testing Pyramid (Platform Edition)
+## <a id="2-the-testing-pyramid-platform-edition"></a>2. The Testing Pyramid (Platform Edition)
 
 ```
                         /\
@@ -97,7 +97,7 @@ This means we don't test everything equally. We invest testing effort where **th
 
 ---
 
-## 3. Layer 0 — Static Analysis & Linting
+## <a id="3-layer-0--static-analysis--linting"></a>3. Layer 0 — Static Analysis & Linting
 
 ### Why?
 The cheapest possible bug prevention — runs before any test. For a TypeScript-first test framework, this catches type errors, import problems, and code style issues instantly.
@@ -160,7 +160,7 @@ npm install -D typescript @typescript-eslint/parser @typescript-eslint/eslint-pl
 
 ---
 
-## 4. Layer 1 — Unit Tests
+## <a id="4-layer-1--unit-tests"></a>4. Layer 1 — Unit Tests
 
 ### Why?
 Unit tests validate the **business logic of test utilities and shared test helpers** — not the application itself (which is Kotlin). On the Node.js test tooling side, unit tests validate:
@@ -248,183 +248,117 @@ describe('buildWorkflow factory', () => {
 
 ---
 
-## 5. Layer 2 — API Contract Tests
+## <a id="5-layer-2--api-contract-tests"></a>5. Layer 2 — API Contract Tests
 
 ### Why?
-The JD explicitly calls out:
+API contract tests answer one fundamental question: **"If the platform API changes, which consumers will break before we deploy to production?"**
 
-> _"Design and implement automated validation... including **API and event contracts**, service integration, and critical end-to-end workflows."_
+This is **Consumer-Driven Contract Testing (CDCT)**:
+1. **The Consumer (`workflow-host-app`)** writes tests defining the HTTP interactions it needs (status code, headers, JSON body shape).
+2. **Pact captures these expectations** into a standardized contract file (`pacts/workflow-host-app-workflow-api.json`).
+3. **The Provider (`workflow-api`)** replays this contract in its own pipeline against its real running Fastify controllers with database access mocked out.
 
-API contract tests answer one question: **"If the platform API changes, which consumers break?"**
+---
 
-This is Consumer-Driven Contract Testing (CDCT). Each product team (consumer) defines what they expect from the Workflow Platform API (provider). The contract is published to a **Pact Broker**. The platform team runs the contract tests on every deploy to confirm they haven't broken any consumer.
+### 🧠 Core Concept Revision & Interview Cheatsheet
 
-### Tools
+#### 1. Contract Testing vs. Integration Testing — What's the Difference?
+* **Integration Tests**: Spin up containers (PostgreSQL, Kafka) and verify that `Service -> Database` queries work and data is correctly written.
+* **Contract Tests**: Intercept the **boundary between two services**. They verify that the consumer and provider agree on:
+  * HTTP route paths (`/api/v1/workflows`) and methods (`POST`, `GET`).
+  * Custom headers (`x-tenant-id`, `x-user-id`, `content-type`).
+  * HTTP status codes (`200`, `201`, `400`, `404`).
+  * Response envelope structure (`{ success: true, data: { ... } }` vs `{ success: false, error: { ... } }`).
+  * Serialization formats (e.g. ISO 8601 strings for timestamps, numeric types for amounts).
 
-| Tool | Purpose |
-|---|---|
-| **Pact JS (`@pact-foundation/pact`)** | Consumer-Driven Contract Testing framework |
-| **Pact Broker** | Centrally stores and verifies contracts between teams |
-| **Supertest** | HTTP request assertions in Node.js |
+#### 2. Why is the Database Mocked during Provider Pact Verification?
+A common misconception is: *"If the database is mocked, how does Pact catch database column changes?"*
+* **The Separation of Concerns**:
+  * If a developer renames a DB column from `title` to `display_name`, their **Integration/Unit Tests** will fail on the database query.
+  * If the developer updates the database query but forgets that the public API must still output `title`, the **Pact Provider Test** fails immediately because the returned JSON is missing `title`.
+* This decouples provider testing from live database state, making contract verification lightning fast (~500ms) and 100% deterministic.
 
-### Setup
+#### 3. Matchers vs. Exact Values (`MatchersV3`)
+In Pact, consumers should **never assert static IDs or exact timestamps** unless strictly necessary. Instead, use flexible type matchers:
+* `uuid('a1b2c3d4-...')`: Ensures the field is a valid RFC 4122 UUID string.
+* `integer(3500)`: Ensures the value is an integer type (or numeric).
+* `string('EXPENSE')`: Ensures the field is a string, using the example for mock responses.
+* `like({ ... })`: Validates the structure and types of object properties without locking in fixed values.
 
-```bash
-npm install -D @pact-foundation/pact supertest @types/supertest
-```
+#### 4. Provider States (`given(...)` and `stateHandlers`)
+To test different scenarios against the same endpoint (e.g. `200 OK` vs `404 Not Found` for `GET /api/v1/workflows/:id`), the consumer specifies a **Provider State**:
+* **Consumer**: `.given('workflow does not exist')`
+* **Provider**: Registers `stateHandlers: { 'workflow does not exist': async () => { currentWorkflow = null; } }`
+* When Pact executes, it invokes the state handler before firing the HTTP request, allowing the provider mock to return `null` and trigger Fastify's `404 WORKFLOW_NOT_FOUND` error handler.
 
-### Consumer Side (Product Team writing the contract)
+---
 
-```typescript
-// tests/contracts/consumer/workflow-api.consumer.pact.ts
-import { PactV3, MatchersV3 } from '@pact-foundation/pact';
-import { buildWorkflow } from '../../src/factories/workflow.factory';
-import axios from 'axios';
+### Implementation & File References
 
-const { like, eachLike, string, uuid } = MatchersV3;
-
-const provider = new PactV3({
-  consumer: 'expense-product-team',
-  provider: 'workflow-platform-api',
-  dir: './pacts'
-});
-
-describe('Workflow Platform API Contract — Consumer', () => {
-  describe('POST /api/v1/workflows', () => {
-    it('creates a new workflow and returns its ID', async () => {
-      await provider
-        .given('the platform is ready')
-        .uponReceiving('a request to create an expense-approval workflow')
-        .withRequest({
-          method: 'POST',
-          path: '/api/v1/workflows',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': string('acme-corp')
-          },
-          body: like(buildWorkflow({ tenantId: 'acme-corp' }))
-        })
-        .willRespondWith({
-          status: 201,
-          headers: { 'Content-Type': 'application/json' },
-          body: {
-            workflowId: uuid(),
-            status: string('PENDING'),
-            createdAt: string()
-          }
-        })
-        .executeTest(async (mockServer) => {
-          const response = await axios.post(
-            `${mockServer.url}/api/v1/workflows`,
-            buildWorkflow({ tenantId: 'acme-corp' }),
-            { headers: { 'X-Tenant-ID': 'acme-corp', 'Content-Type': 'application/json' } }
-          );
-          expect(response.status).toBe(201);
-          expect(response.data.workflowId).toBeDefined();
-        });
-    });
-  });
-});
-```
-
-### Provider Side (Platform team verifying the contract)
+* **Consumer Contract Suite**: [`workflow-api.consumer.pact.test.ts`](../tests/contract/pact/workflow-api.consumer.pact.test.ts)
+* **Provider Verification Suite**: [`workflow-api.provider.pact.test.ts`](../tests/contract/pact/workflow-api.provider.pact.test.ts)
 
 ```typescript
-// tests/contracts/provider/workflow-api.provider.pact.ts
-import { Verifier } from '@pact-foundation/pact';
-
-describe('Workflow Platform API — Provider Verification', () => {
-  it('satisfies all consumer contracts', async () => {
-    await new Verifier({
-      provider: 'workflow-platform-api',
-      providerBaseUrl: process.env.PROVIDER_URL ?? 'http://localhost:8080',
-      pactBrokerUrl: process.env.PACT_BROKER_URL ?? 'http://localhost:9292',
-      publishVerificationResult: true,
-      providerVersion: process.env.GIT_SHA ?? 'local',
-      stateHandlers: {
-        'the platform is ready': async () => {
-          // Seed test data, ensure service is up
-        }
+// Consumer Interaction Example (Zero-State Empty List Contract)
+await provider
+  .given('no workflows exist')
+  .uponReceiving('a request to list workflows when none exist')
+  .withRequest({
+    method: 'GET',
+    path: '/api/v1/workflows',
+    headers: { 'x-tenant-id': 'tenant-corp-a', 'x-user-id': 'user-alice' }
+  })
+  .willRespondWith({
+    status: 200,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body: {
+      success: true,
+      data: {
+        workflows: [],
+        total: integer(0),
+        limit: integer(50),
+        offset: integer(0)
       }
-    }).verifyProvider();
+    }
+  })
+  .executeTest(async (mockServer) => {
+    const res = await fetch(`${mockServer.url}/api/v1/workflows`, { headers: { 'x-tenant-id': 'tenant-corp-a', 'x-user-id': 'user-alice' } });
+    const body = await res.json();
+    expect(body.data.workflows).toEqual([]);
   });
-});
-```
-
-### What Is Being Tested
-
-```
-Product Team A      Pact Contract File       Workflow Platform API
-(Consumer)    ──►  (stored in Pact Broker) ◄── (Provider)
-  defines              compared by             proves it still
-  what it needs        Pact Broker             meets the contract
 ```
 
 ---
 
-## 6. Layer 3 — Kafka / Event Contract Tests
+## <a id="6-layer-3--kafka--event-contract-tests"></a>6. Layer 3 — Kafka / Event Contract Tests
 
 ### Why?
-Kafka events are how product teams react to workflow state changes. If the schema of `workflow.approved` changes without notice, every consumer silently breaks. The JD specifically calls out:
+In an event-driven architecture, services communicate asynchronously via Kafka topics. If the producer (`workflow-api`) changes the payload shape of `workflow.submitted.v1`, downstream consumers (`notification-service`, `audit-service`) will fail to parse messages, creating **poison pills** in consumer partitions.
 
-> _"Distributed and event-driven systems. Experience testing... **schema compatibility, delivery semantics, ordering, retries, and idempotency**."_
+### 🧠 Core Concept Revision & Mechanics
 
-### Tools
+#### 1. How MessagePact Works Without a Live Kafka Broker
+* Unlike HTTP Pact (which spins up a local mock HTTP server), **Pact Message testing** is transport-agnostic.
+* It operates directly on serialized message payloads (JSON / CloudEvents).
+* **Consumer Side**: Defines the message structure it expects and verifies that its internal message handler (e.g. `NotificationConsumer.processMessage`) can deserialize and process it without throwing errors.
+* **Producer Side**: Passes its event creation function (e.g. `buildWorkflowEvent`) to Pact's `Verifier` using `messageProviders`. Pact compares the generated object to the contract JSON file.
 
-| Tool | Purpose |
-|---|---|
-| **`@pact-foundation/pact`** (MessagePact) | Kafka / async message contract testing |
-| **`kafkajs`** | Node.js Kafka client — publish and consume test events |
-| **`@testcontainers/kafka`** | Spin up a real Kafka instance for integration tests |
+#### 2. CloudEvents 1.0 Specification Invariants
+All workflow platform events adhere strictly to the CNCF CloudEvents 1.0 specification:
+* `specversion`: Must be `'1.0'`.
+* `type`: Unique reverse-DNS event type string (e.g. `workflow.submitted.v1`, `workflow.approved.v1`).
+* `source`: Identifying producer service (`workflow-api`).
+* `id`: Unique event UUID.
+* `time`: ISO 8601 UTC timestamp (`2026-09-21T08:00:00.000Z`).
+* `datacontenttype`: Content type (`application/json`).
+* `data`: Domain payload containing `workflowId`, `tenantId`, `status`, `actorId`, and custom metadata.
 
-### Setup
+### Implementation & File References
 
-```bash
-npm install -D kafkajs @testcontainers/kafka
-```
-
-### Consumer Contract — Kafka Message
-
-```typescript
-// tests/contracts/consumer/workflow-events.consumer.pact.ts
-import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact';
-
-const { like, string, uuid, datetime } = MatchersV3;
-
-const messagePact = new PactV3({
-  consumer: 'notification-service',
-  provider: 'workflow-platform-events',
-  dir: './pacts',
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4
-});
-
-describe('Kafka Event Contract — workflow.approved', () => {
-  it('notification-service can consume a workflow.approved event', async () => {
-    await messagePact
-      .expectsToReceive('a workflow.approved event')
-      .withContent({
-        eventType: string('workflow.approved'),
-        workflowId: uuid(),
-        tenantId: string(),
-        approvedBy: uuid(),
-        approvedAt: datetime("yyyy-MM-dd'T'HH:mm:ssXXX"),
-        metadata: like({
-          workflowType: string('expense-approval'),
-          currentStep: like(2),
-          totalSteps: like(2)
-        })
-      })
-      .withMetadata({ contentType: 'application/json' })
-      .verify(async (event) => {
-        // Simulate the notification service handler
-        const parsed = JSON.parse(JSON.stringify(event)) as Record<string, unknown>;
-        expect(parsed['eventType']).toBe('workflow.approved');
-        expect(parsed['workflowId']).toBeTruthy();
-        expect(parsed['tenantId']).toBeTruthy();
-      });
-  });
-});
-```
+* **Kafka Consumer Contract Suite**: [`workflow-events.consumer.pact.test.ts`](../tests/contract/pact/workflow-events.consumer.pact.test.ts)
+* **Kafka Producer Verification Suite**: [`workflow-events.provider.pact.test.ts`](../tests/contract/pact/workflow-events.provider.pact.test.ts)
+* **Cross-Service Event Compatibility Test**: [`cross-service-event.contract.test.ts`](../tests/contract/cross-service-event.contract.test.ts)
+* **Partition Ordering & Murmur2 Test**: [`kafka-partition-ordering.contract.test.ts`](../tests/contract/kafka-partition-ordering.contract.test.ts)
 
 ### Idempotency Test — Duplicate Event Handling
 
@@ -476,7 +410,7 @@ describe('Kafka Event Idempotency', () => {
 
 ---
 
-## 7. Layer 3c — Kafka Schema Compatibility Testing
+## <a id="7-layer-3c--kafka-schema-compatibility-testing"></a>7. Layer 3c — Kafka Schema Compatibility Testing
 
 ### Why?
 Kafka uses an **at-least-once delivery** model with no built-in schema enforcement — any producer can publish anything to a topic. When the Workflow Platform team changes an event payload (adds a field, renames one, changes a type), **consumers silently break** unless schema compatibility is enforced at the infrastructure level.
@@ -846,7 +780,7 @@ This dual-publish strategy ensures **zero-downtime schema evolution** across all
 
 ---
 
-## 8. Layer 4 — Service Integration Tests
+## <a id="8-layer-4--service-integration-tests"></a>8. Layer 4 — Service Integration Tests
 
 ### Why?
 Individual units and contracts may pass but services can still fail when wired together. Integration tests spin up the **real service** (or a close approximation) and test against a real database, real Kafka, and real HTTP endpoints — without a browser or UI.
@@ -911,33 +845,21 @@ describe('POST /api/v1/workflows — Integration', () => {
 });
 ```
 
-### Example — Tenant Isolation Integration Test
+### Testcontainers Live Integration Suite Matrix
 
-```typescript
-// tests/integration/api/tenant-isolation.test.ts
-describe('Tenant Isolation', () => {
-  it('tenant-a cannot access tenant-b workflows', async () => {
-    // Create a workflow under tenant-b
-    const create = await request(BASE_URL)
-      .post('/api/v1/workflows')
-      .set('X-Tenant-ID', 'tenant-b')
-      .send({ type: 'expense-approval', submittedBy: 'user-b1', tenantId: 'tenant-b', steps: [] })
-      .expect(201);
+The platform includes 5 production-grade live integration test suites that spin up ephemeral PostgreSQL and Kafka Docker containers for deterministic, mock-free validation:
 
-    const { workflowId } = create.body as { workflowId: string };
-
-    // Attempt to access it as tenant-a
-    await request(BASE_URL)
-      .get(`/api/v1/workflows/${workflowId}`)
-      .set('X-Tenant-ID', 'tenant-a')
-      .expect(404); // Must not leak — 404 is correct (not 403, which would confirm existence)
-  });
-});
-```
+| Test Suite | Containers | Key Failure Modes & Invariants Tested | File Location |
+| :--- | :--- | :--- | :--- |
+| **Concurrent Idempotency & Atomic Locking** | `PostgreSqlContainer` | • 10-worker atomic race condition on identical `Idempotency-Key`<br>• Exactly-1 mutation guarantee (`RETURNING id`)<br>• Cached replay verification (`x-idempotent-replay: true`)<br>• Multi-tenant key namespace isolation | [`tests/integration/idempotency.live.integration.test.ts`](../tests/integration/idempotency.live.integration.test.ts) |
+| **High-Concurrency Connection Pool Stress** | `PostgreSqlContainer` | • 25 concurrent tasks sharing a tiny connection pool (`max: 3`)<br>• Random interleaving across 5 distinct tenants<br>• Forced syntax errors & mid-transaction `ROLLBACK` hygiene<br>• Zero `app.current_tenant_id` session bleed (`is_local = true`) | [`tests/integration/pool-stress.live.integration.test.ts`](../tests/integration/pool-stress.live.integration.test.ts) |
+| **Transactional Outbox Relay & Auto-Drain** | `PostgreSqlContainer` + `KafkaContainer` | • Atomic DB dual-write commit (`workflows` + `outbox_events`)<br>• Partition-keyed production to real Kafka broker (`${tenantId}:${workflowId}`)<br>• Broker transport failure recording (`retry_count`, `last_error`)<br>• Chronological backlog auto-drain (`ORDER BY created_at ASC`) | [`tests/integration/outbox-relay.live.integration.test.ts`](../tests/integration/outbox-relay.live.integration.test.ts) |
+| **Kafka Dead Letter Queue (DLQ) & Replay** | `KafkaContainer` + `PostgreSqlContainer` | • Ingestion of corrupted raw non-JSON bytes into `workflow.events`<br>• Schema validator failure interception (`SCHEMA_VALIDATION_ERROR`)<br>• Forwarding to `workflow.events.dlq` and writing to `dlq_messages`<br>• Operator REST replay back into `workflow.events` (`status = 'REPLAYED'`) | [`tests/integration/kafka-dlq.live.integration.test.ts`](../tests/integration/kafka-dlq.live.integration.test.ts) |
+| **PostgreSQL Row-Level Security (RLS)** | `PostgreSqlContainer` | • PostgreSQL engine-level tenant isolation enforcement<br>• Cross-tenant `SELECT`, `UPDATE`, and `INSERT` blocking<br>• Zero row leakage under non-superuser database roles | [`tests/integration/postgres-rls.live.integration.test.ts`](../tests/integration/postgres-rls.live.integration.test.ts) |
 
 ---
 
-## 8. Layer 5 — End-to-End Tests (E2E)
+## <a id="9-layer-5--end-to-end-tests-e2e"></a>9. Layer 5 — End-to-End Tests (E2E)
 
 ### Why?
 The JD mentions:
@@ -987,77 +909,81 @@ export default defineConfig({
 });
 ```
 
-### Example — Critical Path: Full Expense Approval Flow
+### Example 1 — Out-of-Office Delegations & Proxy Approvals Flow
 
 ```typescript
-// tests/e2e/workflows/expense-approval.e2e.ts
-import { test, expect, Page } from '@playwright/test';
+// tests/e2e/workflow-lifecycle.spec.ts
+test('Out-of-Office Delegations & Proxy Approvals: Manager sets delegation in UI and proxy colleague signs off', async ({ page }) => {
+  await page.goto('/expenses');
+  await page.waitForLoadState('networkidle');
 
-test.describe('Full Expense Approval Workflow', () => {
-  test('submitter creates a workflow, approver approves it, and state becomes APPROVED', async ({ page, context }) => {
-    // Step 1: Submitter logs in and creates a workflow
-    await page.goto('/login');
-    await page.fill('[data-testid="email"]', 'submitter@acme.com');
-    await page.fill('[data-testid="password"]', process.env.TEST_PASSWORD!);
-    await page.click('[data-testid="login-btn"]');
+  // Step 1: Bob (Team Lead) configures Out-of-Office Delegation in UI Modal
+  await page.getByTestId('tenant-selector').selectOption('tenant-corp-a');
+  await page.getByTestId('user-selector').selectOption('user-bob');
 
-    await page.goto('/expense/new');
-    await page.fill('[data-testid="expense-amount"]', '50000');
-    await page.fill('[data-testid="expense-description"]', 'Team offsite');
-    await page.click('[data-testid="submit-for-approval"]');
+  await page.getByTestId('open-delegation-modal-btn').click();
+  await expect(page.getByTestId('delegation-modal-content')).toBeVisible();
 
-    // Verify the embedded Workflow Widget shows PENDING state
-    const workflowWidget = page.frameLocator('[data-testid="workflow-widget"]');
-    await expect(workflowWidget.locator('[data-testid="workflow-status"]')).toHaveText('PENDING');
+  // Select Carol White as proxy delegatee and submit
+  await page.getByTestId('delegation-delegatee-select').selectOption('user-carol');
+  await page.getByTestId('delegation-reason-input').fill('Annual Leave - Proxying to Carol White');
+  await page.getByTestId('create-delegation-submit-btn').click();
 
-    const workflowUrl = page.url();
-    const workflowId = new URL(workflowUrl).searchParams.get('workflowId');
+  // Confirm delegation is active in list and close modal
+  await expect(page.getByTestId('delegation-record-card').first()).toBeVisible({ timeout: 5000 });
+  await page.getByTestId('close-delegation-modal-btn').click();
 
-    // Step 2: Approver opens a different browser context (different session)
-    const approverPage = await context.newPage();
-    await approverPage.goto('/login');
-    await approverPage.fill('[data-testid="email"]', 'manager@acme.com');
-    await approverPage.fill('[data-testid="password"]', process.env.TEST_PASSWORD!);
-    await approverPage.click('[data-testid="login-btn"]');
+  // Step 2: Alice creates and submits an expense under $10,000
+  await page.getByTestId('user-selector').selectOption('user-alice');
+  const expenseTitle = `Team Offsite Logistics - ${Date.now()}`;
+  await page.getByTestId('new-expense-btn').click();
+  await page.getByTestId('expense-title-input').fill(expenseTitle);
+  await page.getByTestId('expense-amount-input').fill('4200');
+  await page.getByTestId('submit-create-btn').click();
 
-    // Navigate to the approval inbox
-    await approverPage.goto('/approvals');
-    await approverPage.click(`[data-testid="approve-btn-${workflowId}"]`);
+  await page.getByText(expenseTitle).click();
+  await page.getByTestId('submit-workflow-btn').click();
+  await expect(page.getByTestId('workflow-status-badge')).toHaveText(/Pending/i, { timeout: 5000 });
 
-    // Step 3: Back to submitter — verify the workflow is now APPROVED
-    await page.reload();
-    await expect(workflowWidget.locator('[data-testid="workflow-status"]')).toHaveText('APPROVED', { timeout: 10_000 });
-  });
+  // Step 3: Switch persona to Carol (Proxy Approver / Delegatee)
+  await page.getByTestId('user-selector').selectOption('user-carol');
+  await page.getByTestId('nav-approvals-link').click();
+  await page.getByText(expenseTitle).click();
+
+  // Step 4: Carol approves on behalf of Bob via active delegation
+  const approveBtn = page.getByTestId('approve-workflow-btn');
+  await expect(approveBtn).toBeVisible();
+  await approveBtn.click();
+  await expect(page.getByTestId('workflow-status-badge')).toHaveText(/Approved/i, { timeout: 5000 });
+
+  // Step 5: Verify Compliance Audit Trail
+  await page.getByTestId('nav-audit-link').click();
+  await expect(page.getByTestId('audit-timeline')).toBeVisible({ timeout: 5000 });
 });
 ```
 
-### Example — Micro-Frontend Widget in Host App
+### Example 2 — Micro-Frontend Widget in Host App
 
 ```typescript
-// tests/e2e/mfe/widget-embedding.e2e.ts
+// tests/e2e/mfe-integration.spec.ts
 test.describe('Workflow Widget Embedded in Host App', () => {
   test('widget renders correctly inside the expense host app without style conflicts', async ({ page }) => {
-    await page.goto('/expense/12345'); // A host app page with the widget embedded
+    await page.goto('/expenses');
 
-    // Ensure the widget iframe/web component loaded
-    const widget = page.locator('[data-testid="workflow-widget"]');
+    // Ensure the widget web component rendered within Shadow DOM
+    const widget = page.locator('[data-testid="workflow-widget-container"]');
     await expect(widget).toBeVisible();
 
-    // Verify no console errors from the widget
-    const errors: string[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') errors.push(msg.text());
-    });
-
-    await page.waitForTimeout(2000); // Allow async loading
-    expect(errors.filter(e => e.includes('workflow'))).toHaveLength(0);
+    // Verify custom event bubbling across MFE boundary
+    const statusBadge = page.getByTestId('workflow-status-badge');
+    await expect(statusBadge).toBeVisible();
   });
 });
 ```
 
 ---
 
-## 9. Layer 6 — Performance & Resilience Tests
+## <a id="10-layer-6--performance--resilience-tests"></a>10. Layer 6 — Performance & Resilience Tests
 
 ### Why?
 The JD states:
@@ -1168,7 +1094,7 @@ export const options = {
 
 ---
 
-## 10. Layer 7 — Security & Tenant Isolation Tests
+## <a id="11-layer-7--security--tenant-isolation-tests"></a>11. Layer 7 — Security & Tenant Isolation Tests
 
 ### Why?
 From the JD:
@@ -1253,7 +1179,7 @@ describe('PostgreSQL Row-Level Security (RLS) Hardware Enforcement', () => {
 
 ---
 
-## 11. CI/CD Integration
+## <a id="12-cicd-integration"></a>12. CI/CD Integration
 
 ### Pipeline Stages
 
@@ -1421,7 +1347,7 @@ jobs:
 
 ---
 
-## 12. Observability & Telemetry in Tests
+## <a id="13-observability--telemetry-in-tests"></a>13. Observability & Telemetry in Tests
 
 ### Why?
 The platform requires end-to-end trace correlation and metrics isolation across services:
@@ -1466,7 +1392,7 @@ expect(traceJson.data[0].spans.length).toBeGreaterThanOrEqual(1);
 
 ---
 
-## 13. Test Data Strategy
+## <a id="14-test-data-strategy"></a>14. Test Data Strategy
 
 ### Rules
 
@@ -1498,7 +1424,7 @@ describe('Workflow API', () => {
 
 ---
 
-## 14. Tool Selection Summary
+## <a id="15-tool-selection-summary"></a>15. Tool Selection Summary
 
 | Category | Tool | Why Chosen |
 |---|---|---|
@@ -1518,7 +1444,7 @@ describe('Workflow API', () => {
 
 ---
 
-## 15. Risk-Based Testing Matrix
+## <a id="16-risk-based-testing-matrix"></a>16. Risk-Based Testing Matrix
 
 Based on the JD responsibilities and platform architecture:
 

@@ -6,37 +6,58 @@ This document provides step-by-step instructions to run, develop, interact with,
 
 ## 📋 Table of Contents
 
-1. [Prerequisites](#-prerequisites)
-2. [Deployment & Execution Modes](#-deployment--execution-modes)
-   - [Mode 1: Local Development (Docker Compose + Monorepo Dev)](#mode-1-local-development-docker-compose--monorepo-dev)
+1. [Prerequisites](#prerequisites)
+2. [Deployment & Execution Modes](#deployment-execution-modes)
+   - [Mode 1: Local Development (Docker Compose + Monorepo Dev)](#mode-1-local-development-docker-compose-monorepo-dev)
    - [Mode 2: Multi-Node Kubernetes Cluster](#mode-2-multi-node-kubernetes-cluster)
-3. [Service Endpoints & Access URLs](#-service-endpoints--access-urls)
-4. [Individual Service CLI Commands](#-individual-service-cli-commands)
-5. [Interactive Manual Testing Guide (UI Walkthrough)](#-interactive-manual-testing-guide-ui-walkthrough)
-   - [Step-by-Step Multi-Tier Approval Walkthrough ($120k Example)](#1-step-by-step-multi-tier-approval-walkthrough-120000-example)
-   - [Approvals Inbox Experience](#2-approvals-inbox-experience-httplocalhost8080approvals)
-   - [Kafka UI Event Inspection (JSON Payloads)](#3-kafka-ui-event-inspection-httplocalhost8085)
-   - [Distributed Tracing in Jaeger](#4-distributed-tracing-in-jaeger-httplocalhost16686)
-   - [Prometheus Metrics Inspection](#5-prometheus-metrics-inspection-httplocalhost9090)
-6. [API Usage & Examples (Multi-Step & Delegation)](#-api-usage--examples-multi-step--delegation)
-7. [Manual Verification Scenarios (All Platform Enhancements)](#-manual-verification-scenarios-all-platform-enhancements)
+3. [Service Endpoints & Access URLs](#service-endpoints-access-urls)
+4. [Individual Service CLI Commands](#individual-service-cli-commands)
+5. [Interactive Manual Testing Guide (UI Walkthrough)](#interactive-manual-testing-guide-ui-walkthrough)
+   - [1. Step-by-Step Multi-Tier Approval Walkthrough ($120k Example)](#1-step-by-step-multi-tier-approval-walkthrough-120000-example)
+   - [2. Negative & Edge Case Testing Scenarios](#2-negative-edge-case-testing-scenarios)
+     - [Scenario A: Unauthorized Approver Violation](#scenario-a-unauthorized-approver-role-enforcement-violation)
+     - [Scenario B: Invalid State Transitions](#scenario-b-invalid-state-transitions-double-approval-illegal-transitions)
+     - [Scenario C: Rejection Flow & Reason Validation](#scenario-c-rejection-flow-mandatory-reason-validation)
+     - [Scenario D: Multi-Tenant Data Isolation Breach](#scenario-d-multi-tenant-data-isolation-breach-attempt)
+     - [Scenario E: Duplicate Submission & Idempotency](#scenario-e-duplicate-submission-idempotency-key-conflict)
+     - [Scenario F: Outbox Relay Resilience (Broker Outage)](#scenario-f-transactional-outbox-relay-resilience-kafka-outage-simulation-auto-drain)
+   - [3. Approvals Inbox Experience](#3-approvals-inbox-experience)
+   - [4. Kafka UI Event Inspection](#4-kafka-ui-event-inspection)
+   - [5. Distributed Tracing in Jaeger](#5-distributed-tracing-in-jaeger)
+   - [6. Prometheus Metrics Inspection](#6-prometheus-metrics-inspection)
+6. [API Usage & Curl Examples (Multi-Step & Delegation)](#api-usage-curl-examples-multi-step-delegation)
+   - [1. Create a Multi-Step Expense (Dynamic Amount Routing)](#1-create-a-multi-step-expense-dynamic-amount-routing)
+   - [2. Submit for Approval](#2-submit-for-approval)
+   - [3. Step 1 Approval (Team Lead)](#3-step-1-approval-team-lead)
+   - [4. Setup Out-of-Office Delegation](#4-setup-out-of-office-delegation)
+   - [5. Proxy Approval via Delegation](#5-proxy-approval-via-delegation)
+7. [Manual Verification Scenarios (All Platform Enhancements)](#manual-verification-scenarios-all-platform-enhancements)
    - [Scenario 1: Real-Time Live Sync (Server-Sent Events)](#scenario-1-real-time-live-sync-server-sent-events)
-   - [Scenario 2: Kafka Dead Letter Queue (DLQ) & Consumer Resilience](#scenario-2-kafka-dead-letter-queue-dlq--consumer-resilience)
-   - [Scenario 3: Configurable Workflow Rules & Parallel Approvals (AND/OR Quorums)](#scenario-3-configurable-workflow-rules--parallel-approvals-andor-quorums)
+   - [Scenario 2: Kafka Dead Letter Queue (DLQ) & Consumer Resilience](#scenario-2-kafka-dead-letter-queue-dlq-consumer-resilience)
+   - [Scenario 3: Configurable Workflow Rules & Parallel Approvals (AND/OR Quorums)](#scenario-3-configurable-workflow-rules-parallel-approvals-andor-quorums)
    - [Scenario 4: PostgreSQL Row-Level Security (RLS) Database Hardening](#scenario-4-postgresql-row-level-security-rls-database-hardening)
-8. [Automated Testing Guide](#-automated-testing-guide)
-   - [Unit, Contract & Integration Tests (Vitest)](#1-run-unit-contract--integration-tests-vitest)
-   - [End-to-End Tests (Playwright)](#2-run-end-to-end-automated-tests-playwright)
-   - [Performance & Load Tests (k6)](#3-run-performance--load-tests-k6)
-9. [Cluster Lifecycle, Pausing & Teardown](#-cluster-lifecycle-pausing--teardown)
-   - [Option A: Pausing & Resuming the Cluster (Zero CPU/RAM, 100% Data Retention)](#option-a-pausing--resuming-the-cluster-zero-cpuram-100-data-retention)
-   - [Option B: Complete Teardown & Resource Deletion](#option-b-complete-teardown--resource-deletion)
+   - [Scenario 5: End-to-End Distributed Tracing & W3C Trace Context Propagation](#scenario-5-end-to-end-distributed-tracing-w3c-trace-context-propagation)
+   - [Scenario 6: Deep Health & Readiness Probes](#scenario-6-deep-health-readiness-probes)
+   - [Scenario 7: Prometheus Metrics, Alerts & Provisioned Grafana Dashboards](#scenario-7-prometheus-metrics-alerts-provisioned-grafana-dashboards)
+   - [Scenario 8: Out-of-Office Delegations & Proxy Approvals (UI & API)](#scenario-8-out-of-office-delegations-proxy-approvals-ui-api)
+8. [Automated Testing Guide](#automated-testing-guide)
+   - [1. Developer Fast Feedback Loop](#1-developer-fast-feedback-loop)
+   - [2. Granular Test Suites (Vitest & Pact)](#2-granular-test-suites-vitest-pact)
+   - [Contract Testing Concept Revision & Mechanics Guide](#contract-testing-concept-revision-mechanics-guide)
+   - [Contract Testing File Reference Map](#contract-testing-file-reference-map)
+   - [3. End-to-End Automated Tests (Playwright)](#3-end-to-end-automated-tests-playwright)
+   - [4. Performance & Load Tests (k6)](#4-performance-load-tests-k6)
+   - [5. Summary of Key Platform Test Suites](#5-summary-of-key-platform-test-suites)
+   - [CI/CD Pipelines Overview](#cicd-pipelines-overview)
+9. [Cluster Lifecycle, Pausing & Teardown](#cluster-lifecycle-pausing-teardown)
+   - [Option A: Pausing & Resuming the Cluster (Zero CPU/RAM, 100% Data Retention)](#option-a-pausing-resuming-the-cluster-zero-cpuram-100-data-retention)
+   - [Option B: Complete Teardown & Resource Deletion](#option-b-complete-teardown-resource-deletion)
    - [Option C: Docker Compose Mode Teardown](#option-c-docker-compose-mode-teardown)
    - [Option D: Destroy Local Kubernetes Cluster (Kind/k3d)](#option-d-destroy-local-kubernetes-cluster-kindk3d)
 
 ---
 
-## 📋 Prerequisites
+## <a id="prerequisites"></a>📋 Prerequisites
 
 Ensure the following tools are installed on your machine:
 - **Node.js**: `v22.x` (or `v20.x+`)
@@ -47,9 +68,9 @@ Ensure the following tools are installed on your machine:
 
 ---
 
-## 🚀 Deployment & Execution Modes
+## <a id="deployment-execution-modes"></a>🚀 Deployment & Execution Modes
 
-### Mode 1: Local Development (Docker Compose + Monorepo Dev)
+### <a id="mode-1-local-development-docker-compose-monorepo-dev"></a>Mode 1: Local Development (Docker Compose + Monorepo Dev)
 
 Recommended for day-to-day development, rapid iteration, and debugging with hot-reloading.
 
@@ -84,7 +105,7 @@ When modifying TypeScript definitions in `@workflow/shared-types` or components 
 
 ---
 
-### Mode 2: Multi-Node Kubernetes Cluster
+### <a id="mode-2-multi-node-kubernetes-cluster"></a>Mode 2: Multi-Node Kubernetes Cluster
 
 Recommended for validating production readiness, zero-downtime deployments, horizontal pod scaling, and network policies.
 
@@ -179,8 +200,8 @@ When you have created test expenses, approvals, and audit records and want to wi
 * **🌐 Resetting Kafka UI Manually (Optional)**:
   You can also purge messages directly from the Kafka UI web console:
   1. Open Kafka UI at [http://localhost:8085](http://localhost:8085).
-  2. Click **Topics** $\rightarrow$ **`workflow.events`** $\rightarrow$ **Messages**.
-  3. Click **Purge Messages** (or go to Topic Settings $\rightarrow$ **Delete Topic**).
+  2. Click **Topics** → **`workflow.events`** → **Messages**.
+  3. Click **Purge Messages** (or go to Topic Settings → **Delete Topic**).
 
 * **💣 Hard Reset (Wipe PVC Volume & Fresh Database Initialization)**:
   Deletes the Postgres PersistentVolumeClaim, triggers automatic database re-initialization, and re-runs migration scripts:
@@ -221,7 +242,7 @@ When turning off your laptop, stepping away, or running heavy Docker tasks for o
 
 ---
 
-## 🌐 Service Endpoints & Access URLs
+## <a id="service-endpoints-access-urls"></a>🌐 Service Endpoints & Access URLs
 
 | Component / Tool | Port (Local / K8s) | Working URL | Description |
 |---|---|---|---|
@@ -239,7 +260,7 @@ When turning off your laptop, stepping away, or running heavy Docker tasks for o
 
 ---
 
-## 🛠️ Individual Service CLI Commands
+## <a id="individual-service-cli-commands"></a>🛠️ Individual Service CLI Commands
 
 To run microservices in separate terminal windows:
 
@@ -262,11 +283,11 @@ npm run dev:host
 
 ---
 
-## 💡 Interactive Manual Testing Guide (UI Walkthrough)
+## <a id="interactive-manual-testing-guide-ui-walkthrough"></a>💡 Interactive Manual Testing Guide (UI Walkthrough)
 
-### 1. Step-by-Step Multi-Tier Approval Walkthrough ($120,000 Example)
+### <a id="1-step-by-step-multi-tier-approval-walkthrough-120000-example"></a>1. Step-by-Step Multi-Tier Approval Walkthrough ($120,000 Example)
 
-This walkthrough demonstrates the end-to-end multi-step workflow lifecycle for a **$120,000 expense** requiring a 3-tier financial approval chain (Team Lead $\rightarrow$ Dept Manager $\rightarrow$ Finance Director).
+This walkthrough demonstrates the end-to-end multi-step workflow lifecycle for a **$120,000 expense** requiring a 3-tier financial approval chain (Team Lead → Dept Manager → Finance Director).
 
 ```
    [ Alice Johnson: Submit Draft ($120k) ]
@@ -288,7 +309,7 @@ This walkthrough demonstrates the end-to-end multi-step workflow lifecycle for a
      - **Title**: `"Global Cloud Infrastructure Expansion"`
      - **Category**: `EXPENSE`
      - **Amount**: `120000`
-   - Click **"Create Draft"** $\rightarrow$ Click on the newly created request $\rightarrow$ Click **"Submit for Approval"**.
+   - Click **"Create Draft"** → Click on the newly created request → Click **"Submit for Approval"**.
    - **Visual Stepper**: Notice the 3-step approval timeline appears:
      - `Step 1: Team Lead` 🟡 **PENDING**
      - `Step 2: Dept Manager` ⚪ **WAITING**
@@ -320,11 +341,11 @@ This walkthrough demonstrates the end-to-end multi-step workflow lifecycle for a
 
 ---
 
-### 2. Negative & Edge Case Testing Scenarios
+### <a id="2-negative-edge-case-testing-scenarios"></a>2. Negative & Edge Case Testing Scenarios
 
 These scenarios validate that the system strictly enforces security boundaries, business invariants, idempotency, and transactional resilience:
 
-#### ❌ Scenario A: Unauthorized Approver / Role Enforcement Violation
+#### <a id="scenario-a-unauthorized-approver-role-enforcement-violation"></a>❌ Scenario A: Unauthorized Approver / Role Enforcement Violation
 * **Objective**: Ensure that users cannot sign off on approval steps outside of their designated organizational role.
 * **Test in UI**:
   1. As **Alice Johnson (Requester)**, submit a new expense request.
@@ -347,7 +368,7 @@ These scenarios validate that the system strictly enforces security boundaries, 
 
 ---
 
-#### ❌ Scenario B: Invalid State Transitions (Double Approval / Illegal Transitions)
+#### <a id="scenario-b-invalid-state-transitions-double-approval-illegal-transitions"></a>❌ Scenario B: Invalid State Transitions (Double Approval / Illegal Transitions)
 * **Objective**: Ensure state machine invariants cannot be bypassed.
 * **Case 1: Approving a DRAFT without submitting**:
   ```powershell
@@ -376,12 +397,12 @@ These scenarios validate that the system strictly enforces security boundaries, 
 
 ---
 
-#### ❌ Scenario C: Rejection Flow & Mandatory Reason Validation
+#### <a id="scenario-c-rejection-flow-mandatory-reason-validation"></a>❌ Scenario C: Rejection Flow & Mandatory Reason Validation
 * **Objective**: Verify that rejections require an explicit justification and terminate subsequent steps immediately.
 * **Test in UI**:
   1. As **Alice Johnson**, create and submit an expense of `$120,000`.
   2. Switch to **Bob Smith (Team Lead)**, open the request in **Approvals Inbox**.
-  3. Click **"Reject"** without typing a reason $\rightarrow$ Form blocks submission with validation error: *"Rejection reason is required"*.
+  3. Click **"Reject"** without typing a reason → Form blocks submission with validation error: *"Rejection reason is required"*.
   4. Type reason `"Exceeds quarterly budget allocation"` and click **"Confirm Rejection"**.
 * **Resulting Observations**:
   - Workflow status turns 🔴 **REJECTED**.
@@ -392,7 +413,7 @@ These scenarios validate that the system strictly enforces security boundaries, 
 
 ---
 
-#### ❌ Scenario D: Multi-Tenant Data Isolation Breach Attempt
+#### <a id="scenario-d-multi-tenant-data-isolation-breach-attempt"></a>❌ Scenario D: Multi-Tenant Data Isolation Breach Attempt
 * **Objective**: Guarantee that Tenant B cannot read, submit, approve, or modify any workflow belonging to Tenant A.
 * **Test via API / Curl**:
   ```powershell
@@ -416,7 +437,7 @@ These scenarios validate that the system strictly enforces security boundaries, 
 
 ---
 
-#### ❌ Scenario E: Duplicate Submission & Idempotency Key Conflict
+#### <a id="scenario-e-duplicate-submission-idempotency-key-conflict"></a>❌ Scenario E: Duplicate Submission & Idempotency Key Conflict
 * **Objective**: Prevent duplicate financial approvals or charges caused by network double-clicks or client retries.
 * **Test via API / Curl**:
   ```powershell
@@ -445,7 +466,7 @@ These scenarios validate that the system strictly enforces security boundaries, 
 
 ---
 
-#### 🔄 Scenario F: Transactional Outbox Relay Resilience (Kafka Outage Simulation & Auto-Drain)
+#### <a id="scenario-f-transactional-outbox-relay-resilience-kafka-outage-simulation-auto-drain"></a>🔄 Scenario F: Transactional Outbox Relay Resilience (Kafka Outage Simulation & Auto-Drain)
 * **Objective**: Prove that state changes are 100% resilient to message broker outages without data loss (Dual-Write guarantee).
 * **Architecture Under Test**:
   ```
@@ -512,7 +533,7 @@ These scenarios validate that the system strictly enforces security boundaries, 
 
 ---
 
-### 3. Approvals Inbox Experience ([http://localhost:8080/approvals](http://localhost:8080/approvals))
+### <a id="3-approvals-inbox-experience"></a>3. Approvals Inbox Experience
 
 The Approvals Inbox is tailored for management personnel to view and sign off on pending workflows across their department:
 
@@ -523,9 +544,9 @@ The Approvals Inbox is tailored for management personnel to view and sign off on
 
 ---
 
-### 4. Kafka UI Event Inspection ([http://localhost:8085](http://localhost:8085))
+### <a id="4-kafka-ui-event-inspection"></a>4. Kafka UI Event Inspection
 
-Open **Kafka UI** at [http://localhost:8085](http://localhost:8085) $\rightarrow$ click **Topics** $\rightarrow$ click **`workflow.events`** $\rightarrow$ select the **Messages** tab.
+Open **Kafka UI** at [http://localhost:8085](http://localhost:8085) → click **Topics** → click **`workflow.events`** → select the **Messages** tab.
 
 For the **$120,000 3-step workflow**, Kafka UI displays the following 4 versioned **CloudEvents 1.0** messages in exact sequential order:
 
@@ -628,11 +649,11 @@ For the **$120,000 3-step workflow**, Kafka UI displays the following 4 versione
 
 ---
 
-### 5. Distributed Tracing in Jaeger ([http://localhost:16686](http://localhost:16686))
+### <a id="5-distributed-tracing-in-jaeger"></a>5. Distributed Tracing in Jaeger
 
 Open [http://localhost:16686](http://localhost:16686) in your browser:
 1. Select **Service**: `workflow-api` or `audit-service`.
-2. Click **Find Traces** $\rightarrow$ select the trace for `POST /api/v1/workflows/:id/approve`.
+2. Click **Find Traces** → select the trace for `POST /api/v1/workflows/:id/approve`.
 
 #### What You Will Observe:
 * **End-to-End Span Hierarchy**:
@@ -655,9 +676,9 @@ Open [http://localhost:16686](http://localhost:16686) in your browser:
 
 ---
 
-### 6. Prometheus Metrics Inspection ([http://localhost:9090](http://localhost:9090))
+### <a id="6-prometheus-metrics-inspection"></a>6. Prometheus Metrics Inspection
 
-Open [http://localhost:9090](http://localhost:9090) $\rightarrow$ go to **Graph** or **Table** view and query the following metrics:
+Open [http://localhost:9090](http://localhost:9090) → go to **Graph** or **Table** view and query the following metrics:
 
 | PromQL Query | What It Measures | Expected Observation for $120k Workflow |
 |---|---|---|
@@ -670,10 +691,10 @@ Open [http://localhost:9090](http://localhost:9090) $\rightarrow$ go to **Graph*
 
 ---
 
-## 📡 API Usage & Curl Examples (Multi-Step & Delegation)
+## <a id="api-usage-curl-examples-multi-step-delegation"></a>📡 API Usage & Curl Examples (Multi-Step & Delegation)
 
-### 1. Create a Multi-Step Expense (Dynamic Amount Routing)
-Expenses above ¥100,000 / $100,000 automatically require 3 levels of approval (Team Lead $\rightarrow$ Dept Manager $\rightarrow$ Finance Director):
+### <a id="1-create-a-multi-step-expense-dynamic-amount-routing"></a>1. Create a Multi-Step Expense (Dynamic Amount Routing)
+Expenses above ¥100,000 / $100,000 automatically require 3 levels of approval (Team Lead → Dept Manager → Finance Director):
 ```bash
 curl -X POST http://localhost:3000/api/v1/workflows \
   -H "Content-Type: application/json" \
@@ -689,7 +710,7 @@ curl -X POST http://localhost:3000/api/v1/workflows \
   }'
 ```
 
-### 2. Submit for Approval
+### <a id="2-submit-for-approval"></a>2. Submit for Approval
 ```bash
 curl -X POST http://localhost:3000/api/v1/workflows/<WORKFLOW_ID>/submit \
   -H "Content-Type: application/json" \
@@ -699,7 +720,7 @@ curl -X POST http://localhost:3000/api/v1/workflows/<WORKFLOW_ID>/submit \
   -d '{ "comment": "Urgent contract renewal" }'
 ```
 
-### 3. Step 1 Approval (Team Lead)
+### <a id="3-step-1-approval-team-lead"></a>3. Step 1 Approval (Team Lead)
 ```bash
 curl -X POST http://localhost:3000/api/v1/workflows/<WORKFLOW_ID>/approve \
   -H "Content-Type: application/json" \
@@ -710,41 +731,60 @@ curl -X POST http://localhost:3000/api/v1/workflows/<WORKFLOW_ID>/approve \
 ```
 *Notice: Workflow status remains `PENDING`, `currentStepOrder` advances to `2`, and a `workflow.step_approved.v1` CloudEvent is relayed to Kafka.*
 
-### 4. Setup Out-of-Office Delegation
-Delegate manager approval authority to a proxy colleague:
+### <a id="4-setup-out-of-office-delegation"></a>4. Setup Out-of-Office Delegation
+Delegate manager approval authority to a proxy colleague during leave:
+
+#### Method A: Via Host App UI Modal (Recommended)
+1. Open the Host Application at [http://localhost:5173](http://localhost:5173).
+2. Switch persona to the delegator (e.g., **Bob Smith — Team Lead**).
+3. Click the **`OOO Delegation`** button in the navigation header to open the modal.
+4. Select the proxy colleague (e.g., **Carol White — Dept Manager**), specify the date window (`validFrom` $\rightarrow$ `validUntil`), enter a reason (e.g. *"Annual Leave"*), and click **Save Delegation Authority**.
+5. The delegation immediately appears in the active list with status `ACTIVE NOW`.
+
+#### Method B: Via REST API / cURL
 ```bash
 curl -X POST http://localhost:3000/api/v1/delegations \
   -H "Content-Type: application/json" \
   -H "x-tenant-id: tenant-corp-a" \
+  -H "x-user-id: user-bob" \
+  -H "x-user-name: Bob Smith" \
   -d '{
-    "delegatorId": "manager-002",
-    "delegateeId": "proxy-user-005",
+    "delegatorId": "user-bob",
+    "delegateeId": "user-carol",
     "validFrom": "2026-09-01T00:00:00Z",
     "validUntil": "2026-10-01T00:00:00Z",
-    "reason": "On paternity leave"
+    "reason": "On annual PTO"
   }'
 ```
 
-### 5. Proxy Approval via Delegation
-Proxy user approves on behalf of `manager-002`:
+### <a id="5-proxy-approval-via-delegation"></a>5. Proxy Approval via Delegation
+Proxy user approves the workflow on behalf of the delegator:
+
+#### Method A: Via Host App Approvals Inbox
+1. Switch persona to the proxy colleague (**Carol White**).
+2. Click **Approvals Inbox** in the navigation bar.
+3. Click on the pending workflow request.
+4. Click **Approve** in the embedded Workflow Widget. The backend validates the active delegation and processes the approval, setting `is_delegated = true` and recording `delegatedFrom: "user-bob"`.
+
+#### Method B: Via REST API / cURL
 ```bash
 curl -X POST http://localhost:3000/api/v1/workflows/<WORKFLOW_ID>/approve \
   -H "Content-Type: application/json" \
   -H "x-tenant-id: tenant-corp-a" \
-  -H "x-user-id: proxy-user-005" \
-  -H "x-user-name: Proxy Colleague" \
-  -d '{ "comment": "Step 2 approved as delegate for manager" }'
+  -H "x-user-id: user-carol" \
+  -H "x-user-name: Carol White" \
+  -d '{ "comment": "Step 1 approved as proxy delegate for Bob" }'
 ```
 
 ---
 
-## 🎯 Manual Verification Scenarios (All Platform Enhancements)
+## <a id="manual-verification-scenarios-all-platform-enhancements"></a>🎯 Manual Verification Scenarios (All Platform Enhancements)
 
 This section contains dedicated, copy-paste test scenarios covering all 4 platform enhancements with dual PowerShell and Bash/cURL commands.
 
 ---
 
-### Scenario 1: Real-Time Live Sync (Server-Sent Events)
+### <a id="scenario-1-real-time-live-sync-server-sent-events"></a>Scenario 1: Real-Time Live Sync (Server-Sent Events)
 
 **Objective**: Verify that workflow state changes, approvals, and alerts instantly propagate to connected web clients with zero polling latency.
 
@@ -781,7 +821,7 @@ data: {"type":"connected","clientId":"client-...","timestamp":"..."}
 
 ---
 
-### Scenario 2: Kafka Dead Letter Queue (DLQ) & Consumer Resilience
+### <a id="scenario-2-kafka-dead-letter-queue-dlq-consumer-resilience"></a>Scenario 2: Kafka Dead Letter Queue (DLQ) & Consumer Resilience
 
 **Objective**: Verify that malformed poison-pill messages or schema violations are safely isolated to `workflow.events.dlq` without blocking main consumer processing partitions, and can be inspected/replayed via REST API.
 
@@ -861,7 +901,7 @@ curl -X POST "http://localhost:3002/api/v1/dlq/replay/<DLQ_RECORD_ID>"
 
 ---
 
-### Scenario 3: Configurable Workflow Rules & Parallel Approvals (AND/OR Quorums)
+### <a id="scenario-3-configurable-workflow-rules-parallel-approvals-andor-quorums"></a>Scenario 3: Configurable Workflow Rules & Parallel Approvals (AND/OR Quorums)
 
 **Objective**: Verify dynamic tenant matrix configuration and multi-reviewer parallel quorum evaluation.
 
@@ -946,7 +986,7 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/v1/workflows/$wfId/approve" -M
 
 ---
 
-### Scenario 4: PostgreSQL Row-Level Security (RLS) Database Hardening
+### <a id="scenario-4-postgresql-row-level-security-rls-database-hardening"></a>Scenario 4: PostgreSQL Row-Level Security (RLS) Database Hardening
 
 **Objective**: Verify database engine-level isolation and WITH CHECK constraint enforcement against cross-tenant attacks.
 
@@ -984,14 +1024,14 @@ kubectl exec -n workflow-platform postgres-0 -- psql -U app_user -d workflow_db 
  tenant-corp-a |     5
 ---
 
-### Scenario 5: End-to-End Distributed Tracing & W3C Trace Context Propagation
+### <a id="scenario-5-end-to-end-distributed-tracing-w3c-trace-context-propagation"></a>Scenario 5: End-to-End Distributed Tracing & W3C Trace Context Propagation
 
 **Objective**: Verify that user actions from the browser automatically generate W3C `traceparent` and correlation headers, create child database spans in Fastify, and propagate across Kafka to consumers in Jaeger.
 
 #### Step 1: Submit an Expense or Step Approval in the Browser
 1. Open [http://localhost:8080/expenses](http://localhost:8080/expenses) in your browser.
 2. Create or select a workflow, and click **Submit for Approval** or **Approve Request**.
-3. In DevTools **Network $\rightarrow$ Headers**, verify outgoing request headers:
+3. In DevTools **Network → Headers**, verify outgoing request headers:
    - `traceparent: 00-<trace_id>-<span_id>-01`
    - `x-correlation-id: req-...`
    - `x-tenant-id: tenant-corp-a`
@@ -1010,7 +1050,7 @@ curl -s "http://localhost:16686/api/traces?service=workflow-api&limit=1"
 
 ---
 
-### Scenario 6: Deep Health & Readiness Probes
+### <a id="scenario-6-deep-health-readiness-probes"></a>Scenario 6: Deep Health & Readiness Probes
 
 **Objective**: Verify that `/health/live` and `/health/ready` report true process and dependency health (PostgreSQL connection pool and Kafka cluster reachability).
 
@@ -1046,7 +1086,7 @@ curl -s http://localhost:3000/health/ready
 
 ---
 
-### Scenario 7: Prometheus Metrics, Alerts & Provisioned Grafana Dashboards
+### <a id="scenario-7-prometheus-metrics-alerts-provisioned-grafana-dashboards"></a>Scenario 7: Prometheus Metrics, Alerts & Provisioned Grafana Dashboards
 
 **Objective**: Inspect PostgreSQL pool connection metrics, Outbox backlog gauges, and active Prometheus alerting rules.
 
@@ -1064,16 +1104,49 @@ curl -s "http://localhost:9090/api/v1/query?query=kafka_dlq_messages_total"
 
 #### Method B: Open Provisioned Grafana Dashboards
 1. Navigate to Grafana at [http://localhost:3005](http://localhost:3005).
-2. Open **Dashboards** $\rightarrow$ **Workflow Platform - System Health & Business Performance**.
+2. Open **Dashboards** → **Workflow Platform - System Health & Business Performance**.
 3. View real-time graphs for HTTP throughput, DB Connection Pool Saturation, Outbox Lag, and DLQ Message Counts.
 
 ---
 
-## 🧪 Automated Testing Guide
+### <a id="scenario-8-out-of-office-delegations-proxy-approvals-ui-api"></a>Scenario 8: Out-of-Office Delegations & Proxy Approvals (UI & API)
+
+**Objective**: Verify that when a manager goes on leave and configures an Out-of-Office delegation, their designated proxy colleague can sign off pending workflows, and the system accurately tags the action as delegated in PostgreSQL and Kafka CloudEvents.
+
+#### Step 1: Configure Out-of-Office Delegation in UI Modal
+1. Open the Host Application at [http://localhost:5173](http://localhost:5173).
+2. Select **Active Persona: Bob Smith — Team Lead (Step 1 Approver)**.
+3. Click the **`OOO Delegation`** button in the top navigation bar.
+4. In the modal:
+   - **Proxy Colleague**: Select `Carol White — Dept Manager`.
+   - **Valid From / Until**: Keep default window (starts today, valid for 7 days).
+   - **Reason**: Enter `Annual PTO - Delegating to Carol White`.
+   - Click **Save Delegation Authority**.
+5. Confirm that the new delegation appears with badge `ACTIVE NOW`. Click **✕** to close modal.
+
+#### Step 2: Submit a Workflow as Alice
+1. Switch **Active Persona** to `Alice Johnson — Requester`.
+2. Click **New Expense**, enter title `Offsite Team Lunch - $4,200`, and submit.
+3. Click on the expense and click **Submit for Approval**. Status becomes `PENDING` (assigned to Step 1 Team Lead).
+
+#### Step 3: Proxy Approver Signs Off
+1. Switch **Active Persona** to `Carol White — Dept Manager`.
+2. Navigate to **Approvals Inbox**.
+3. Select `Offsite Team Lunch - $4,200`.
+4. Click **Approve**.
+5. The request succeeds! Status transitions to `APPROVED`.
+
+#### Step 4: Verify Compliance & Audit Trail
+1. Click **Audit Ledger** in the navigation bar.
+2. Verify the audit log records the approval action with `isDelegated: true` and `delegatedFrom: user-bob`.
+
+---
+
+## <a id="automated-testing-guide"></a>🧪 Automated Testing Guide
 
 The platform features an **8-Layer Quality Engineering Testing Pyramid** with over **140+ automated tests across 30+ test suites**.
 
-### 1. Developer Fast Feedback Loop
+### <a id="1-developer-fast-feedback-loop"></a>1. Developer Fast Feedback Loop
 ```bash
 # ⚡ Fast Pre-Commit Check (< 3s): Typecheck + Unit + React Component tests (69 tests)
 npm run check:fast
@@ -1085,7 +1158,7 @@ npm run check:all
 npm run test:watch
 ```
 
-### 2. Granular Test Suites (Vitest)
+### <a id="2-granular-test-suites-vitest-pact"></a>2. Granular Test Suites (Vitest & Pact)
 ```bash
 # Run all automated test suites across the monorepo
 npm test
@@ -1093,11 +1166,20 @@ npm test
 # Run microservice unit tests (state machine, rules engine, rate limiter, SLA time-travel, outbox, SSE)
 npm run test:unit
 
-# Run REST API & Kafka CloudEvents contract & Murmur2 partition ordering tests
+# Run non-Pact contract tests (Murmur2 partition hashing, CloudEvents schemas) + Pact suites
 npm run test:contract
 
-# Run Consumer-Driven Pact contract tests (HTTP & MessagePact)
+# Run complete Pact Contract suite (Consumer generation + Provider verification)
 npm run test:pact
+
+# Step 1: Generate consumer pact contracts (HTTP 200/201/400/404 & Kafka CloudEvents)
+npm run test:pact:consumer
+
+# Step 2: Verify providers against generated pact files (Fastify API stateHandlers + Kafka messageProviders)
+npm run test:pact:provider
+
+# Publish generated pact files to Pact Broker (CI/CD)
+npm run pact:publish
 
 # Run Pact Can-I-Deploy matrix gate check
 npm run pact:can-i-deploy -- --pacticipant workflow-api --version 1.0.0 --to-environment dev
@@ -1109,7 +1191,78 @@ npm run test:security
 npm run test:integration
 ```
 
-### 3. End-to-End Automated Tests (Playwright)
+---
+
+### <a id="contract-testing-concept-revision-mechanics-guide"></a>📘 Contract Testing Concept Revision & Mechanics Guide
+Use this quick-reference guide to revise key contract testing concepts without having to inspect raw code:
+
+#### 1. What is Consumer-Driven Contract Testing (CDCT)?
+* **Problem**: End-to-end integration tests between multiple microservices in staging environments are slow, flaky, and hard to debug. If Service A changes an API field, Service B only discovers the break after deployment or in expensive staging runs.
+* **Solution**: The **Consumer** (`workflow-host-app`, `notification-service`, `audit-service`) writes tests that define *exactly* the HTTP requests or Kafka events it expects from the **Provider** (`workflow-api`).
+* **The Pact Contract**: Pact records these expectations into a standardized JSON file (`pacts/`). In CI/CD, the Provider independently reads this file and replays all interactions against its real controllers to prove compliance **before either service is deployed**.
+
+#### 2. Negative Scenarios & Error Response Envelopes
+* **Concept**: Contract tests should not test every single validation branch (that is the job of unit tests). However, **every distinct error response shape** consumed by client applications must have a contract.
+* **Why it matters**: If a backend API changes its error envelope from `{ success: false, error: { code: 'WORKFLOW_NOT_FOUND', message: '...' } }` to `{ errors: ['Not found'] }`, the consumer UI crashes on `.error.code`.
+* **Covered In**: [`workflow-api.consumer.pact.test.ts`](../tests/contract/pact/workflow-api.consumer.pact.test.ts)
+  * `400 Bad Request` with `VALIDATION_ERROR` payload.
+  * `404 Not Found` with `WORKFLOW_NOT_FOUND` payload.
+
+#### 3. Empty Collection Zero-State Contracts (`workflows: []`)
+* **The Bug**: A frequent production bug happens when a backend returns `null` or omits a property when 0 records exist, whereas the frontend expects `workflows: []` and calls `workflows.map()`, causing unhandled exceptions.
+* **The Contract**: The consumer explicitly expects HTTP `200` with `{ success: true, data: { workflows: [], total: 0, limit: 50, offset: 0 } }` given `'no workflows exist'`.
+* **Covered In**: [`workflow-api.consumer.pact.test.ts`](../tests/contract/pact/workflow-api.consumer.pact.test.ts)
+
+#### 4. Provider States (`stateHandlers`)
+* **Concept**: A provider cannot return a `200 OK` (workflow exists) and a `404 Not Found` (workflow missing) using static, global mocks simultaneously.
+* **Mechanism**:
+  1. The consumer annotates interactions with `.given('workflow exists')` or `.given('no workflows exist')`.
+  2. The provider verifier registers `stateHandlers` in [`workflow-api.provider.pact.test.ts`](../tests/contract/pact/workflow-api.provider.pact.test.ts).
+  3. Before replaying each HTTP interaction, Pact invokes the matching setup handler (e.g. setting mock database state to return an existing workflow or `null`).
+
+#### 5. Asynchronous Kafka Event Contracts (MessagePact)
+* **Concept**: How do we prevent breaking changes in asynchronous event streams without running a live Kafka cluster?
+* **Consumer Side**: [`workflow-events.consumer.pact.test.ts`](../tests/contract/pact/workflow-events.consumer.pact.test.ts) uses `MessageConsumerPact` to define expected CloudEvents 1.0 JSON payloads (`workflow.submitted.v1`, `workflow.step_approved.v1`, `workflow.approved.v1`, `workflow.rejected.v1`, `workflow.cancelled.v1`).
+* **Producer Side**: [`workflow-events.provider.pact.test.ts`](../tests/contract/pact/workflow-events.provider.pact.test.ts) uses Pact's `Verifier` with `messageProviders`. It passes real event generator payloads to verify that the producer emits all fields matching the consumer's contract.
+
+#### 6. Pact Matrix & Can-I-Deploy Gate
+* **Concept**: The **Can-I-Deploy** tool ([`pact-can-i-deploy.ts`](../scripts/pact-can-i-deploy.ts)) queries the Pact Broker compatibility matrix:
+  $$\text{Can Version } X \text{ of Consumer be safely deployed to environment } E \text{ against Version } Y \text{ of Provider?}$$
+* If all contracts between version $X$ and version $Y$ have passed verification, Can-I-Deploy returns green (exit code `0`), unlocking automated deployment in GitHub Actions CI.
+
+---
+
+### <a id="contract-testing-file-reference-map"></a>📁 Contract Testing File Reference Map
+
+| File Path | Role | Key Functionality |
+|---|---|---|
+| [`workflow-api.consumer.pact.test.ts`](../tests/contract/pact/workflow-api.consumer.pact.test.ts) | Consumer Contract (HTTP) | Defines Host App expectations for Draft Creation (201), List/Query (200), Empty List (200), 404 Not Found, 400 Validation, and Approve/Reject actions. Generates `pacts/workflow-host-app-workflow-api.json`. |
+| [`workflow-api.provider.pact.test.ts`](../tests/contract/pact/workflow-api.provider.pact.test.ts) | Provider Verification (HTTP) | Boots real Fastify server on ephemeral port (`port: 0`), replays HTTP contracts from pact JSON, and dynamically configures DB mocks using `stateHandlers`. |
+| [`workflow-events.consumer.pact.test.ts`](../tests/contract/pact/workflow-events.consumer.pact.test.ts) | Consumer Contract (Kafka) | Uses `MessageConsumerPact` to define CloudEvents contracts for `notification-service` and `audit-service`. Generates event pact JSON files. |
+| [`workflow-events.provider.pact.test.ts`](../tests/contract/pact/workflow-events.provider.pact.test.ts) | Provider Verification (Kafka) | Verifies `workflow-api` event generator outputs against `notification-service` and `audit-service` pact contracts using `Verifier` with `messageProviders`. |
+| [`cross-service-event.contract.test.ts`](../tests/contract/cross-service-event.contract.test.ts) | Non-Pact Contract Suite | Validates CloudEvents 1.0 specification invariants, schema validation, and additive backward/forward compatibility. |
+| [`kafka-partition-ordering.contract.test.ts`](../tests/contract/kafka-partition-ordering.contract.test.ts) | Partition Ordering Suite | Enforces Murmur2 partition key invariants (`${tenantId}:${workflowId}`) and strict monotonic state transitions. |
+| [`pact-publish.ts`](../scripts/pact-publish.ts) | CI Script | Publishes local pact JSON contract files to remote/local Pact Broker with Git commit SHA and branch metadata. |
+| [`pact-can-i-deploy.ts`](../scripts/pact-can-i-deploy.ts) | CI Deployment Gate | Evaluates verification status across participant versions in target environments (`dev`, `qa`, `prod`). |
+
+---
+
+### <a id="2b-testcontainers-live-integration-tests"></a>2b. Testcontainers Live Integration Tests (Docker Container Automation)
+Spins up ephemeral PostgreSQL and Kafka Docker containers on isolated ports for mock-free, deterministic validation of database transactions, outbox relays, DLQ routing, and connection pool isolation:
+
+```bash
+# Run all live Testcontainers integration suites:
+npm run test:integration:live
+# OR directly via vitest:
+npx vitest run tests/integration/idempotency.live.integration.test.ts tests/integration/pool-stress.live.integration.test.ts tests/integration/outbox-relay.live.integration.test.ts tests/integration/kafka-dlq.live.integration.test.ts tests/integration/postgres-rls.live.integration.test.ts
+```
+
+> [!NOTE]
+> All live test files feature automatic Docker detection (`isDockerAvailable()`). When Docker is running, tests run against live ephemeral containers; in non-Docker environments, tests skip cleanly with exit code `0` without blocking CI.
+
+---
+
+### <a id="3-end-to-end-automated-tests-playwright"></a>3. End-to-End Automated Tests (Playwright)
 Executes multi-tenant isolation tests, MFE event bus contracts, API error boundaries, and automated WCAG 2.1 AA accessibility scans:
 ```bash
 # First time setup (if Playwright browsers not installed):
@@ -1122,34 +1275,67 @@ npm run test:e2e
 npx playwright test --ui
 ```
 
-### 4. Performance & Load Tests (k6)
-Simulates concurrent multi-tenant workloads, SLA thresholds, and noisy-neighbor throttling:
+### <a id="4-performance-load-tests-k6"></a>4. Performance & Load Tests (k6)
+Simulates concurrent multi-tenant workloads, end-to-end lifecycles, rapid surges, long-term stability, and noisy-neighbor throttling:
 ```bash
-# Baseline workflow creation & listing load test (P95 < 200ms)
+# 1. Core full-lifecycle load test (Draft -> Submit -> Approve -> List, P95 < 150ms, P99 < 300ms)
 npm run test:perf
 
-# Multi-tenant noisy neighbor isolation test (Flooder 429 throttling vs High-SLA VIP p95 < 100ms)
+# 2. Multi-tenant noisy neighbor isolation test (Flooder 429 throttling vs High-SLA VIP p95 < 100ms)
 npm run test:perf:noisy-neighbor
+
+# 3. Rapid traffic spike & surge resilience test (10 -> 150 VUs in seconds, zero 5xx errors)
+npm run test:perf:spike
+
+# 4. Long-duration soak & endurance test (10-min steady load for memory & DB connection pool leak checks)
+npm run test:perf:soak
+
+# 5. Real-time Server-Sent Events (SSE) streaming & notification query test (p95 < 150ms, >99% success)
+npm run test:perf:sse
+
+# 6. Direct Kafka Consumer Group Lag benchmark (xk6-kafka, 500 events/sec direct to topic)
+npm run test:perf:kafka:build
+npm run test:perf:kafka:lag
+
+# 7. Direct Kafka DLQ poison pill & schema failure stress test (xk6-kafka)
+npm run test:perf:kafka:dlq
 ```
+
+> [!TIP]
+> For complete documentation of performance testing architectures, custom trends, and SLA metrics, see the **[Performance Testing & Test Coverage Guide](./faqs/perf.md)**.
 
 ---
 
-### 5. Summary of Key Platform Test Suites
+### <a id="5-summary-of-key-platform-test-suites"></a>5. Summary of Key Platform Test Suites
 
 | Category | Test Suite File | What It Validates |
 |---|---|---|
 | **Contract** | `tests/contract/kafka-partition-ordering.contract.test.ts` | Murmur2 partition hashing, partition key invariant `${tenantId}:${workflowId}`, monotonic FIFO state sequence. |
+| **Contract / Schema** | `tests/contract/schema-compatibility.test.ts` | AJV JSON schema validation, backward-compatible additive extensions, breaking change detection. |
+| **Live Contract (Port 8081)** | `tests/contract/schema-registry.live.integration.test.ts` | Confluent Schema Registry HTTP integration, wire format framing, live subject registration. |
 | **Unit** | `tests/unit/rate-limiting.test.ts` | Per-tenant token-bucket rate limiting, RFC headers (`X-RateLimit-Limit`, `Retry-After`), and 429 isolation. |
 | **Unit** | `tests/unit/workflow-sla-escalation.test.ts` | Deterministic fake timers (`vi.useFakeTimers`), 48h SLA step escalation to `DEPARTMENT_MANAGER`, 30-day draft TTL. |
 | **Security** | `tests/security/postgres-pool-leak.test.ts` | Connection pool reuse hygiene, `is_local=true` transaction scoping, mid-transaction rollback and context reset. |
 | **Integration** | `tests/integration/trace-waterfall.integration.test.ts` | End-to-end W3C `traceparent` context propagation from Fastify Gateway ➔ Outbox ➔ Kafka ➔ Audit/Notification spans. |
+| **Live Integration (Docker)** | `tests/integration/idempotency.live.integration.test.ts` | 10-worker atomic race condition on identical `Idempotency-Key`, exactly-1 mutation guarantee, cached replay. |
+| **Live Integration (Docker)** | `tests/integration/pool-stress.live.integration.test.ts` | 25 concurrent tasks sharing a 3-connection pool across 5 tenants, rollback hygiene, zero context bleed. |
+| **Live Integration (Docker)** | `tests/integration/outbox-relay.live.integration.test.ts` | Real PostgreSQL dual-write commit, real Kafka partition-keyed production, and chronological auto-drain. |
+| **Live Integration (Docker)** | `tests/integration/kafka-dlq.live.integration.test.ts` | Corrupt non-JSON bytes interception, schema error DLQ routing, DB storage, and operator REST replay. |
+| **Live Integration (Docker)** | `tests/integration/postgres-rls.live.integration.test.ts` | PostgreSQL engine-level RLS policy enforcement, cross-tenant mutation and query blocking. |
+| **E2E** | `tests/e2e/workflow-lifecycle.spec.ts` | Full multi-tier lifecycle, UI Out-of-Office delegation modal, proxy sign-off, multi-step routing, and rejection reason enforcement. |
 | **E2E** | `tests/e2e/mfe-integration.spec.ts` | Micro-frontend custom event bubbling (`workflow-status-change`), live persona switching, API 500 error boundary recovery. |
 | **E2E** | `tests/e2e/accessibility.spec.ts` | Automated WCAG 2.1 AA scanning using `@axe-core/playwright` across host app, widget, and modal dialogs. |
+| **Performance**| `tests/perf/k6-workflow-load.js` | End-to-end workflow lifecycle under load with idempotency headers (p95 < 150ms, p99 < 300ms). |
 | **Performance**| `tests/perf/k6-noisy-neighbor.js` | 200 req/sec flood throttling (429) while innocent tenant maintains <100ms p95 latency. |
+| **Performance**| `tests/perf/k6-spike.js` | Rapid surge (10 -> 150 VUs) resilience, graceful 429 throttling, and zero 5xx responses. |
+| **Performance**| `tests/perf/k6-soak.js` | 10-minute endurance load validating PostgreSQL connection pool and memory stability. |
+| **Performance**| `tests/perf/k6-sse-notifications.js` | Real-time Server-Sent Events (SSE) concurrent connections and notification queries. |
+| **Performance (Kafka)**| `tests/perf/k6-kafka-consumer-lag.js` | Direct high-throughput Kafka CloudEvents production (500/s) benchmarking consumer group lag. |
+| **Performance (Kafka)**| `tests/perf/k6-kafka-dlq-stress.js` | Direct poison pill burst into Kafka verifying consumer DLQ routing & non-blocking offset commits. |
 
 ---
 
-### 🔄 CI/CD Pipelines Overview
+### <a id="cicd-pipelines-overview"></a>🔄 CI/CD Pipelines Overview
 
 1. **Developer PR Pipeline (`.github/workflows/dev-pr.yml`)**:
    - Runs automatically on Pull Requests and feature branches (`feat/**`, `fix/**`).
@@ -1162,9 +1348,9 @@ npm run test:perf:noisy-neighbor
 
 ---
 
-## 🧹 Cluster Lifecycle, Pausing & Teardown
+## <a id="cluster-lifecycle-pausing-teardown"></a>🧹 Cluster Lifecycle, Pausing & Teardown
 
-### Option A: Pausing & Resuming the Cluster (Zero CPU/RAM, 100% Data Retention)
+### <a id="option-a-pausing-resuming-the-cluster-zero-cpuram-100-data-retention"></a>Option A: Pausing & Resuming the Cluster (Zero CPU/RAM, 100% Data Retention)
 > [!TIP]
 > **Recommended when stepping away, shutting down your laptop, or freeing resources for other Docker tasks.**
 > Scaling replicas to `0` terminates running containers so Docker Desktop and Kubernetes consume **0% CPU and 0MB RAM**, while keeping all PostgreSQL PersistentVolumes (`postgres-pvc`), database records, migrations, and local images completely intact.
@@ -1195,7 +1381,7 @@ npm run k8s:resume
 
 ---
 
-### Option B: Complete Teardown & Resource Deletion
+### <a id="option-b-complete-teardown-resource-deletion"></a>Option B: Complete Teardown & Resource Deletion
 Use this when you want to uninstall the Workflow Platform entirely from your Kubernetes cluster:
 
 ```bash
@@ -1209,7 +1395,7 @@ kubectl delete -k k8s/
 
 ---
 
-### Option C: Docker Compose Mode Teardown
+### <a id="option-c-docker-compose-mode-teardown"></a>Option C: Docker Compose Mode Teardown
 If running in Docker Compose mode:
 ```bash
 # Stop and preserve database volumes:
@@ -1221,7 +1407,7 @@ docker compose down -v
 
 ---
 
-### Option D: Destroy Local Kubernetes Cluster (Kind/k3d)
+### <a id="option-d-destroy-local-kubernetes-cluster-kindk3d"></a>Option D: Destroy Local Kubernetes Cluster (Kind/k3d)
 If you created a dedicated local cluster using Kind or k3d:
 ```bash
 # For Kind:
